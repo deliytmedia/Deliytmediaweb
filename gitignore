@@ -1,0 +1,129 @@
+# ============================================================
+# DELIYTMEDIA SOLUTIONS — .gitignore
+# ============================================================
+
+
+# ── API Keys & Secrets ───────────────────────────────────────
+# NEVER commit these to GitHub
+.env
+.env.local
+.env.development
+.env.production
+.env.staging
+*.env
+secrets.js
+secrets.json
+config.local.js
+
+
+# ── Apps Script Config (if exported locally) ─────────────────
+# Your real API keys live inside agent-backend.gs
+# Make sure you replace keys with placeholders before pushing
+# agent-backend.gs     ← uncomment this line to block the file entirely
+#                         or just ensure keys say YOUR_KEY_HERE before push
+
+
+# ── Node / npm ───────────────────────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+.npm
+
+
+# ── OS Files ─────────────────────────────────────────────────
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# Linux
+*~
+
+
+# ── Editor & IDE ─────────────────────────────────────────────
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.sublime-project
+*.sublime-workspace
+
+
+# ── Logs ─────────────────────────────────────────────────────
+logs/
+*.log
+npm-debug.log*
+
+
+# ── Build / Dist ─────────────────────────────────────────────
+dist/
+build/
+out/
+.cache/
+.parcel-cache/
+
+
+# ── Netlify ──────────────────────────────────────────────────
+.netlify/
+netlify.toml.local
+
+
+# ── Temporary & Backup Files ─────────────────────────────────
+*.tmp
+*.temp
+*.bak
+*.backup
+*.orig
+*.rej
+*.patch
+
+
+# ── Testing ──────────────────────────────────────────────────
+coverage/
+.nyc_output/
+test-results/
+
+
+# ── Sensitive Data Exports ───────────────────────────────────
+# In case you ever export your Google Sheets data locally
+*.csv
+*.xlsx
+*.xls
+!sample-data.csv
+
+
+# ── Archive Files ────────────────────────────────────────────
+*.zip
+*.tar
+*.tar.gz
+*.rar
+*.7z
+
+
+# ── Old / Draft Versions ─────────────────────────────────────
+deliytmedia-website.html
+*-old.*
+*-backup.*
+*-draft.*
+*-copy.*
