@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deliytmedia Solutions | Smart Systems That Drive Revenue</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <nav class="container nav">
+            <div class="logo">
+                <span class="logo-icon">⚡</span>
+                <span class="logo-text">Deliytmedia</span>
+            </div>
+            <ul class="nav-links">
+                <li><a href="#services">Services</a></li>
+                <li><a href="#how-it-works">How It Works</a></li>
+                <li><a href="#contact">Contact</a></li>
+            </ul>
+            <button class="nav-cta" onclick="scrollToSection('contact')">Get Started</button>
+        </nav>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-grid">
+
+                <!-- Left: Copy -->
+                <div class="hero-content">
+                    <div class="hero-badge">
+                        <span class="badge-dot"></span>
+                        <span>Based in Nigeria, Built for African Businesses</span>
+                    </div>
+                    <h1 class="hero-title">
+                        Your Business Deserves Systems That Actually <span class="gradient-text">Drive Revenue</span>
+                    </h1>
+                    <p class="hero-subtitle">
+                        We build intelligent platforms that handle the repetitive work — customer inquiries, appointment booking, sales follow-ups — so your team can focus on what humans do best: closing deals, building trust, and growing the business.
+                    </p>
+                    <div class="hero-cta">
+                        <button class="btn btn-primary" onclick="openChat()">Talk to Our Team</button>
+                        <button class="btn btn-secondary" onclick="scrollToSection('services')">See What We Build</button>
+                    </div>
+                    <div class="hero-stats">
+                        <div class="stat-item">
+                            <div class="stat-number">2-3x</div>
+                            <div class="stat-label">More Qualified Leads</div>
+                        </div>
+                        <div class="stat-divider"></div>
+                        <div class="stat-item">
+                            <div class="stat-number">24/7</div>
+                            <div class="stat-label">Always Available</div>
+                        </div>
+                        <div class="stat-divider"></div>
+                        <div class="stat-item">
+                            <div class="stat-number">90 Days</div>
+                            <div class="stat-label">Typical ROI</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Visual mockup -->
+                <div class="hero-visual" aria-hidden="true">
+
+                    <!-- Floating WhatsApp chat mockup -->
+                    <div class="mock-phone">
+                        <div class="mock-phone-bar">
+                            <div class="mock-phone-dot"></div>
+                            <span class="mock-phone-name">⚡ Deliy Assistant</span>
+                            <span class="mock-online">● online</span>
+                        </div>
+                        <div class="mock-messages">
+                            <div class="mock-msg incoming">
+                                <div class="mock-bubble">Hi! I need a WhatsApp agent for my store 👋</div>
+                                <div class="mock-time">9:41 AM</div>
+                            </div>
+                            <div class="mock-msg outgoing">
+                                <div class="mock-bubble">Hey! That's exactly what we build. What kind of store do you run?</div>
+                                <div class="mock-time">9:41 AM ✓✓</div>
+                            </div>
+                            <div class="mock-msg incoming">
+                                <div class="mock-bubble">A fashion boutique. We miss a lot of DMs at night 😅</div>
+                                <div class="mock-time">9:42 AM</div>
+                            </div>
+                            <div class="mock-msg outgoing typing-mock">
+                                <div class="mock-bubble">
+                                    <span class="tdot"></span>
+                                    <span class="tdot"></span>
+                                    <span class="tdot"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Floating stat cards -->
+                    <div class="mock-stat-card card-a">
+                        <div class="mock-stat-icon">📈</div>
+                        <div>
+                            <div class="mock-stat-val">+143%</div>
+                            <div class="mock-stat-lbl">Lead response rate</div>
+                        </div>
+                    </div>
+
+                    <div class="mock-stat-card card-b">
+                        <div class="mock-stat-icon">⚡</div>
+                        <div>
+                            <div class="mock-stat-val">&lt; 2s</div>
+                            <div class="mock-stat-lbl">Avg response time</div>
+                        </div>
+                    </div>
+
+                    <!-- Glow blob behind everything -->
+                    <div class="hero-glow-blob"></div>
+
+                </div><!-- end hero-visual -->
+            </div><!-- end hero-grid -->
+        </div>
+    </section>
+
+    <!-- Problem Section -->
+    <section class="problem-section">
+        <div class="container">
+            <div class="section-header">
+                <h2>You're Losing Money <span class="gradient-text">Every Single Day</span></h2>
+            </div>
+            <div class="problem-grid">
+                <div class="problem-card">
+                    <div class="problem-icon">💸</div>
+                    <p>Every missed WhatsApp inquiry is a customer gone.</p>
+                </div>
+                <div class="problem-card">
+                    <div class="problem-icon">⏰</div>
+                    <p>Every delayed response is someone choosing your competitor instead.</p>
+                </div>
+                <div class="problem-card">
+                    <div class="problem-icon">🔄</div>
+                    <p>Every manual follow-up is time your sales team should spend actually closing deals.</p>
+                </div>
+            </div>
+            <div class="problem-conclusion">
+                <p class="painful-part">The painful part?<br>Most businesses don't even realize how much revenue is slipping through the cracks.</p>
+                <div class="problem-statement">
+                    <p>You don't have a people problem.</p>
+                    <p class="highlight">You have a systems problem.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Solution Section -->
+    <section class="solution-section">
+        <div class="container">
+            <div class="solution-grid">
+
+                <!-- Left: Flow diagram visual -->
+                <div class="solution-visual" aria-hidden="true">
+                    <div class="flow-diagram">
+                        <div class="flow-node node-in">
+                            <span class="flow-icon">💬</span>
+                            <span>Customer Message</span>
+                        </div>
+                        <div class="flow-arrow">↓</div>
+                        <div class="flow-node node-ai">
+                            <span class="flow-icon">⚡</span>
+                            <span>Your Smart System</span>
+                            <span class="flow-badge">24/7</span>
+                        </div>
+                        <div class="flow-arrow">↓</div>
+                        <div class="flow-row">
+                            <div class="flow-node node-out small">
+                                <span class="flow-icon">📅</span>
+                                <span>Books Call</span>
+                            </div>
+                            <div class="flow-node node-out small">
+                                <span class="flow-icon">💰</span>
+                                <span>Qualifies Lead</span>
+                            </div>
+                            <div class="flow-node node-out small">
+                                <span class="flow-icon">📧</span>
+                                <span>Alerts You</span>
+                            </div>
+                        </div>
+                        <div class="flow-arrow">↓</div>
+                        <div class="flow-node node-result">
+                            <span class="flow-icon">🚀</span>
+                            <span>You Close the Deal</span>
+                        </div>
+                        <!-- Glow -->
+                        <div class="flow-glow"></div>
+                    </div>
+                </div>
+
+                <!-- Right: Copy -->
+                <div class="solution-content">
+                    <div class="section-tag">THE SOLUTION</div>
+                    <h2>Smart Systems That Work <span class="gradient-text">While You Sleep</span></h2>
+                    <p class="solution-text">
+                        We build custom platforms that never clock out. Your customers get instant responses. Your team gets qualified leads delivered ready to convert. You get more revenue without constantly hiring more people.
+                    </p>
+                    <div class="solution-highlight">
+                        <p><strong>Not robots replacing humans.</strong></p>
+                        <p>Just intelligent systems handling the repetitive work so your team can focus on the high-value conversations that actually grow the business.</p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- Services Section -->
+    <section id="services" class="services-section">
+        <div class="container">
+            <div class="section-header centered">
+                <div class="section-tag">WHAT WE BUILD</div>
+                <h2>What You <span class="gradient-text">Actually Get</span></h2>
+            </div>
+            <div class="services-grid">
+                <div class="service-card">
+                    <div class="service-icon whatsapp">📱</div>
+                    <h3>WhatsApp Sales Agents</h3>
+                    <p>Your customers already live on WhatsApp. Meet them there with intelligent agents that answer questions, share pricing, qualify leads, and book appointments automatically — even while your team sleeps.</p>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon support">🤖</div>
+                    <h3>24/7 Customer Support</h3>
+                    <p>No more "We'll get back to you tomorrow." Your support system responds instantly, searches your knowledge base intelligently, and only brings in your team when human attention is truly needed.</p>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon booking">📅</div>
+                    <h3>Automatic Appointment Booking</h3>
+                    <p>Stop chasing customers around with calls and messages. Customers book themselves directly into your calendar. Automated reminders go out instantly. No-shows reduce dramatically.</p>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon saas">💼</div>
+                    <h3>Custom SaaS Platforms</h3>
+                    <p>Need something built specifically for your business? We create custom systems from the ground up — event management platforms, business dashboards, client portals, internal tools, and more.</p>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon growth">📊</div>
+                    <h3>Real Growth, Real Fast</h3>
+                    <p>Most businesses see 2–3x more qualified leads within the first month. Because businesses that respond faster usually close faster too.</p>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon marketing">🎯</div>
+                    <h3>Social Media Marketing</h3>
+                    <p>Content that attracts attention and converts. Strategy tailored specifically to your business goals. Management that removes the stress from your plate.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Who It's For Section -->
+    <section class="for-who-section">
+        <div class="container">
+            <div class="for-who-content">
+                <h2>This Is For You <span class="gradient-text">If...</span></h2>
+                <div class="checklist">
+                    <div class="check-item">
+                        <span class="check-icon">✓</span>
+                        <p>You're getting inquiries but losing customers because response times are too slow</p>
+                    </div>
+                    <div class="check-item">
+                        <span class="check-icon">✓</span>
+                        <p>Your team is overwhelmed answering the same repetitive questions every day</p>
+                    </div>
+                    <div class="check-item">
+                        <span class="check-icon">✓</span>
+                        <p>You want to grow revenue without increasing staff costs at the same pace</p>
+                    </div>
+                    <div class="check-item">
+                        <span class="check-icon">✓</span>
+                        <p>You run a service business, e-commerce brand, or growing startup in Nigeria or beyond</p>
+                    </div>
+                    <div class="check-item">
+                        <span class="check-icon">✓</span>
+                        <p>You're tired of patchwork tools and want systems built specifically around your business operations</p>
+                    </div>
+                </div>
+                <div class="not-fit">
+                    <p class="not-fit-title">Not a fit?</p>
+                    <p>If you're looking for a quick template or DIY shortcut, we're probably not the right team. We build custom systems designed to solve real business problems properly.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section id="how-it-works" class="how-it-works-section">
+        <div class="container">
+            <div class="section-header centered">
+                <div class="section-tag">OUR PROCESS</div>
+                <h2>Simple Process. <span class="gradient-text">Powerful Results.</span></h2>
+            </div>
+            <div class="steps-grid">
+                <div class="step-card">
+                    <div class="step-number">01</div>
+                    <h3>Discovery Call</h3>
+                    <p>We talk about your business, where leads are leaking, and what's costing you the most time, money, or opportunities.</p>
+                    <div class="step-detail">30 minutes. No pressure. No hard selling. Just a real business conversation.</div>
+                </div>
+                <div class="step-card">
+                    <div class="step-number">02</div>
+                    <h3>We Build Your System</h3>
+                    <p>Our team designs and develops your custom platform while you focus on running your business. You get progress updates throughout the process.</p>
+                    <div class="step-detail">Most projects take 2–6 weeks depending on complexity.</div>
+                </div>
+                <div class="step-card">
+                    <div class="step-number">03</div>
+                    <h3>Launch & Train</h3>
+                    <p>We train your team, launch everything properly, and make sure the system works exactly the way your business needs it to.</p>
+                    <div class="step-detail">You don't go live until you're fully confident using it.</div>
+                </div>
+                <div class="step-card">
+                    <div class="step-number">04</div>
+                    <h3>You Grow</h3>
+                    <p>Your system starts handling inquiries, booking appointments, and supporting customers automatically. Your team focuses on selling, serving, and scaling.</p>
+                    <div class="step-detail">And whenever you need support, we're here.</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ/Objections Section -->
+    <section class="faq-section">
+        <div class="container">
+            <div class="section-header centered">
+                <h2>Let's Address The <span class="gradient-text">Big Questions</span></h2>
+            </div>
+            <div class="faq-grid">
+                <div class="faq-item">
+                    <h3>Isn't AI going to mess up and damage my brand?</h3>
+                    <p>Not when it's built properly. Every system is trained around your business, your tone, your processes, and your knowledge base.</p>
+                    <p>It only handles what it can handle confidently. Anything outside that gets passed to your team with full context.</p>
+                </div>
+                <div class="faq-item">
+                    <h3>How much does this cost?</h3>
+                    <p>Most projects start around ₦200,000 for basic automation systems and can go up to ₦2M+ for advanced custom platforms.</p>
+                    <p>We'll give you clear pricing after understanding exactly what your business needs. Most clients recover their investment within the first 90 days.</p>
+                </div>
+                <div class="faq-item">
+                    <h3>What if something breaks or needs updates?</h3>
+                    <p>We don't disappear after launch. You get ongoing support.</p>
+                    <p>Need adjustments? We handle it. Something breaks? We fix it fast.</p>
+                </div>
+                <div class="faq-item">
+                    <h3>Do I need to understand the technology?</h3>
+                    <p>No. You explain the business problem. We build the solution. You use the system.</p>
+                    <p>Simple.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Final CTA Section -->
+    <section id="contact" class="cta-section">
+        <div class="container">
+            <div class="cta-content">
+                <h2>Ready to Start Running Your Business Smartly with <span class="gradient-text">Systems</span> While You Make More Business Profits?</h2>
+                <p class="cta-text">
+                    Let's talk about your business. We'll show you exactly where smarter systems could increase revenue, save your team time, and stop valuable leads from slipping away.
+                </p>
+                <div class="cta-features">
+                    <div class="cta-feature">
+                        <span class="feature-icon">✓</span>
+                        <span>No obligation</span>
+                    </div>
+                    <div class="cta-feature">
+                        <span class="feature-icon">✓</span>
+                        <span>No aggressive sales tactics</span>
+                    </div>
+                    <div class="cta-feature">
+                        <span class="feature-icon">✓</span>
+                        <span>Just genuine conversation</span>
+                    </div>
+                </div>
+                <button class="btn btn-primary btn-large" onclick="openChat()">Book Your Free Strategy Call</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Trust Indicators Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="trust-indicators">
+                <div class="trust-item">
+                    <div class="trust-icon">⚡</div>
+                    <div class="trust-content">
+                        <h4>Based in Nigeria, Built for African Businesses</h4>
+                        <p>We understand your market, your customers, and the realities of doing business here.</p>
+                    </div>
+                </div>
+                <div class="trust-item">
+                    <div class="trust-icon">💬</div>
+                    <div class="trust-content">
+                        <h4>Real Support, Real Fast</h4>
+                        <p>Your business doesn't sleep. Neither do the systems we build.</p>
+                    </div>
+                </div>
+                <div class="trust-item">
+                    <div class="trust-icon">🔒</div>
+                    <div class="trust-content">
+                        <h4>Your Data Stays Yours</h4>
+                        <p>Secure systems built to protect your customer data, business operations, and competitive advantage.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Deliytmedia Solutions. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ══ CHAT MODAL OVERLAY (triggered by CTA buttons) ═══════════════════ -->
+    <div class="chat-overlay" id="chatOverlay" onclick="handleOverlayClick(event)">
+        <div class="chat-modal" id="chatModal">
+            <div class="chat-header">
+                <div class="chat-header-content">
+                    <div class="chat-avatar"><span>⚡</span></div>
+                    <div class="chat-header-text">
+                        <h4>Deliy Assistant</h4>
+                        <span class="chat-status">
+                            <span class="status-dot"></span>
+                            Online now
+                        </span>
+                    </div>
+                </div>
+                <button class="chat-close" onclick="closeChat()" aria-label="Close chat">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="chat-messages" id="chatMessages">
+                <div class="message bot-message">
+                    <div class="message-content">
+                        <p>👋 Hey! I'm your Deliytmedia assistant.</p>
+                        <p>I can help you with:</p>
+                        <ul>
+                            <li>Understanding our services</li>
+                            <li>Getting pricing estimates</li>
+                            <li>Booking a free strategy call</li>
+                            <li>Answering questions about our process</li>
+                        </ul>
+                        <p>What brings you here today?</p>
+                    </div>
+                </div>
+            </div>
+            <div class="chat-input-area">
+                <input type="text" class="chat-input" id="chatInput"
+                       placeholder="Type your message..."
+                       onkeypress="handleChatKeyPress(event)">
+                <button class="chat-send" id="chatSend" onclick="sendMessage()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="22" y1="2" x2="11" y2="13"></line>
+                        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ FLOATING BUBBLE (always visible, small trigger) ══════════════════ -->
+    <div class="chat-bubble-btn" id="chatBubbleBtn" onclick="openChat()" title="Chat with us">
+        <svg class="bubble-icon-chat" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+        </svg>
+        <svg class="bubble-icon-close" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:none">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+        <span class="chat-badge">AI</span>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

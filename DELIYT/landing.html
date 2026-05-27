@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Deliytmedia Solutions</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg:     #0a0a0f;
+      --card:   #14141f;
+      --raised: #1c1c2e;
+      --border: rgba(255,255,255,0.06);
+      --text:   #ffffff;
+      --muted:  #8888aa;
+      --lime:   #BFFF00;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: 'Outfit', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow: hidden; /* single screen */
+    }
+
+    /* ── Background radial glow ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(circle at 30% 20%, rgba(191,255,0,0.04) 0%, transparent 50%),
+        radial-gradient(circle at 70% 80%, rgba(102,126,234,0.05) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Layout: minimal branding + full chat ── */
+    .page {
+      position: relative;
+      z-index: 1;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    /* ── Logo strip at top ── */
+    .top-bar {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      padding: 1.1rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(10,10,15,0.9);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+      z-index: 10;
+    }
+
+    .top-logo {
+      font-size: 1.3rem;
+      font-weight: 900;
+      background: linear-gradient(135deg, #BFFF00, #7CFF00);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      color: transparent;
+    }
+
+    .top-tagline {
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    /* ── Chat container (centred, prominent) ── */
+    .chat-wrap {
+      width: 100%;
+      max-width: 520px;
+      height: calc(100vh - 72px);
+      margin-top: 72px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Chat panel ── */
+    .chat-panel {
+      flex: 1;
+      background: var(--card);
+      border: 1px solid rgba(191,255,0,0.12);
+      border-radius: 20px;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.5), 0 0 40px rgba(191,255,0,0.04);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Header */
+    .ch-header {
+      padding: 1.1rem 1.4rem;
+      background: linear-gradient(135deg, #BFFF00, #7CFF00);
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      flex-shrink: 0;
+    }
+
+    .ch-avatar {
+      width: 40px; height: 40px;
+      background: rgba(10,10,15,0.15);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.3rem;
+    }
+
+    .ch-name {
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: #0a0a0f;
+    }
+
+    .ch-status {
+      font-size: 0.78rem;
+      color: rgba(10,10,15,0.65);
+      display: flex; align-items: center; gap: 4px;
+      font-weight: 600;
+    }
+
+    .ch-dot {
+      width: 6px; height: 6px;
+      background: #0a0a0f; border-radius: 50%; opacity: 0.5;
+      animation: blink 2s infinite;
+    }
+    @keyframes blink {
+      0%,100% { opacity:0.4; } 50% { opacity:1; }
+    }
+
+    /* Session timer */
+    .session-timer {
+      margin-left: auto;
+      background: rgba(10,10,15,0.15);
+      border-radius: 8px;
+      padding: 4px 10px;
+      font-size: 0.78rem;
+      font-weight: 800;
+      color: #0a0a0f;
+      display: flex; align-items: center; gap: 4px;
+    }
+
+    .session-timer.warning { background: rgba(255,68,85,0.25); color: #ff4455; }
+
+    /* Messages */
+    .ch-messages {
+      flex: 1;
+      padding: 1.1rem;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .ch-messages::-webkit-scrollbar { width: 4px; }
+    .ch-messages::-webkit-scrollbar-thumb { background: rgba(191,255,0,0.15); border-radius:2px; }
+
+    .msg { max-width: 85%; animation: msgIn 0.25s ease-out; }
+    @keyframes msgIn {
+      from { opacity:0; transform:translateY(6px); }
+      to   { opacity:1; transform:translateY(0);   }
+    }
+    .msg-bot  { align-self: flex-start; }
+    .msg-user { align-self: flex-end; }
+
+    .msg-bubble {
+      padding: 0.75rem 1rem;
+      border-radius: 14px;
+      font-size: 0.9rem;
+      line-height: 1.6;
+    }
+
+    .msg-bot  .msg-bubble {
+      background: rgba(191,255,0,0.07);
+      border: 1px solid rgba(191,255,0,0.14);
+      color: #e0e0f0;
+      border-bottom-left-radius: 4px;
+    }
+    .msg-user .msg-bubble {
+      background: var(--raised);
+      border: 1px solid var(--border);
+      color: #e0e0f0;
+      border-bottom-right-radius: 4px;
+    }
+
+    .msg-bubble p  { margin-bottom: 4px; }
+    .msg-bubble p:last-child { margin-bottom: 0; }
+    .msg-bubble strong { color: var(--lime); }
+
+    /* Typing dots */
+    .typing-dots {
+      display: flex; gap: 4px; align-items: center;
+      padding: 0.85rem 1rem;
+    }
+    .tdot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: rgba(191,255,0,0.5);
+      animation: td 1.4s infinite;
+      display: inline-block;
+    }
+    .tdot:nth-child(2) { animation-delay:0.2s; }
+    .tdot:nth-child(3) { animation-delay:0.4s; }
+    @keyframes td {
+      0%,60%,100% { transform:translateY(0);   opacity:0.4; }
+      30%          { transform:translateY(-6px); opacity:1; }
+    }
+
+    /* Input */
+    .ch-input-row {
+      padding: 0.85rem 1.1rem;
+      border-top: 1px solid var(--border);
+      display: flex; gap: 0.5rem;
+      background: var(--card);
+      flex-shrink: 0;
+    }
+
+    .ch-input {
+      flex: 1;
+      padding: 0.8rem 1rem;
+      background: var(--raised);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .ch-input:focus { border-color: rgba(191,255,0,0.35); }
+    .ch-input::placeholder { color: var(--muted); }
+    .ch-input:disabled { opacity: 0.5; }
+
+    .ch-send {
+      width: 42px; height: 42px;
+      background: linear-gradient(135deg, #BFFF00, #7CFF00);
+      border: none; border-radius: 10px;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      color: #0a0a0f; transition: all 0.2s; flex-shrink: 0;
+    }
+    .ch-send:hover { transform: scale(1.08); box-shadow: 0 4px 14px rgba(191,255,0,0.3); }
+    .ch-send:disabled { opacity: 0.4; cursor:not-allowed; transform:none; }
+
+    /* Session ended banner */
+    .session-ended {
+      display: none;
+      text-align: center;
+      padding: 1rem;
+      background: rgba(191,255,0,0.05);
+      border-top: 1px solid rgba(191,255,0,0.1);
+      font-size: 0.85rem;
+      color: var(--muted);
+      flex-shrink: 0;
+    }
+    .session-ended.show { display: block; }
+    .session-ended a {
+      color: var(--lime);
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    /* Exchange counter (debug, hidden in prod) */
+    .exchange-info {
+      text-align: center;
+      padding: 0.4rem;
+      font-size: 0.75rem;
+      color: rgba(100,100,120,0.5);
+      flex-shrink: 0;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 560px) {
+      .top-tagline { display: none; }
+      .chat-wrap { border-radius: 0; }
+      .chat-panel { border-radius: 0; border-left: none; border-right: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top bar -->
+  <div class="top-bar">
+    <div class="top-logo">⚡ Deliytmedia</div>
+    <div class="top-tagline">Smart systems that drive revenue</div>
+  </div>
+
+  <!-- Chat (full height, centred) -->
+  <div class="chat-wrap">
+    <div class="chat-panel" id="chatPanel">
+
+      <div class="ch-header">
+        <div class="ch-avatar">⚡</div>
+        <div>
+          <div class="ch-name">Deliy Assistant</div>
+          <div class="ch-status"><span class="ch-dot"></span> Online now</div>
+        </div>
+        <div class="session-timer" id="sessionTimer">⏱ <span id="timerDisplay">–</span></div>
+      </div>
+
+      <div class="ch-messages" id="chMessages">
+        <!-- Opening message injected by JS -->
+      </div>
+
+      <div class="session-ended" id="sessionEndedBanner">
+        Session complete. <a href="/">Visit our website</a> or email <a href="mailto:hello@deliytmedia.com">hello@deliytmedia.com</a>
+      </div>
+
+      <div class="exchange-info" id="exchangeInfo"></div>
+
+      <div class="ch-input-row">
+        <input class="ch-input" type="text" id="chInput"
+               placeholder="Type your message..."
+               onkeypress="if(event.key==='Enter') sendLandingMsg()">
+        <button class="ch-send" id="chSend" onclick="sendLandingMsg()">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2.5">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+<script>
+// ════════════════════════════════════════════════════════════
+// LANDING PAGE AGENT CONFIG
+// ════════════════════════════════════════════════════════════
+const LC = {
+  appsScriptUrl:  'YOUR_APPS_SCRIPT_WEB_APP_URL_HERE',
+  conversationId: 'LAND_' + Date.now() + '_' + Math.random().toString(36).substr(2,8).toUpperCase(),
+  isTyping:       false,
+  sessionEnded:   false,
+  exchangeCount:  0,
+  maxExchanges:   8,       // overridden by prompt config
+  sessionSeconds: 45,      // overridden by prompt config
+  inactivitySecs: 45,      // reset on each message
+  inactivityTimer:null,
+  countdownTimer: null,
+  promptId:       null,
+  promptConfig:   null
+};
+
+// ── Read ?p=X from URL ────────────────────────────────────────────────────────
+function getPromptId() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get('p') || params.get('prompt') || '1';
+}
+
+// ── Cancel flow: ?cancel=APT_ID ──────────────────────────────────────────────
+function getCancelId() {
+  return new URLSearchParams(window.location.search).get('cancel');
+}
+
+// ── Load prompt config from Apps Script ──────────────────────────────────────
+async function loadPromptConfig(promptId) {
+  try {
+    const res    = await fetch(`${LC.appsScriptUrl}?action=getPrompt&id=${promptId}`);
+    const config = await res.json();
+    if (config && config.system_prompt) return config;
+  } catch(e) { /* fallback below */ }
+
+  // Fallback defaults if backend not connected
+  return {
+    id:              promptId,
+    name:            'General',
+    system_prompt:   'You are a friendly conversion assistant for Deliytmedia Solutions. Your goal is to understand the visitor\'s business challenge and guide them toward booking a free strategy call. Keep replies under 3 sentences. Be direct and warm.',
+    opening_message: 'Hey! 👋 What brings you here today? What challenge are you trying to solve in your business?',
+    max_exchanges:   8,
+    session_seconds: 45
+  };
+}
+
+// ── Init on page load ─────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  LC.promptId = getPromptId();
+  LC.promptConfig = await loadPromptConfig(LC.promptId);
+  LC.maxExchanges   = LC.promptConfig.max_exchanges   || 8;
+  LC.sessionSeconds = LC.promptConfig.session_seconds || 45;
+  LC.inactivitySecs = LC.sessionSeconds;
+
+  const cancelId = getCancelId();
+
+  if (cancelId) {
+    // Cancellation flow
+    startCancellationFlow(cancelId);
+  } else {
+    // Normal ad landing flow — show opening message
+    setTimeout(() => {
+      appendLandingMsg(LC.promptConfig.opening_message, 'bot');
+      startInactivityTimer();
+    }, 600);
+  }
+});
+
+// ── Append message ────────────────────────────────────────────────────────────
+function appendLandingMsg(text, sender) {
+  const container = document.getElementById('chMessages');
+
+  const wrapper = document.createElement('div');
+  wrapper.className = `msg msg-${sender}`;
+
+  const bubble = document.createElement('div');
+  bubble.className = 'msg-bubble';
+  bubble.innerHTML = formatLandingText(text);
+
+  wrapper.appendChild(bubble);
+  container.appendChild(wrapper);
+  container.scrollTop = container.scrollHeight;
+}
+
+function formatLandingText(text) {
+  text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  return text.split('\n').map(line => {
+    const t = line.trim();
+    if (!t) return '';
+    return `<p>${t}</p>`;
+  }).join('');
+}
+
+// ── Typing indicator ──────────────────────────────────────────────────────────
+function showLandingTyping() {
+  const container = document.getElementById('chMessages');
+  const el = document.createElement('div');
+  el.className = 'msg msg-bot';
+  el.id = 'landingTyping';
+  el.innerHTML = '<div class="msg-bubble typing-dots"><span class="tdot"></span><span class="tdot"></span><span class="tdot"></span></div>';
+  container.appendChild(el);
+  container.scrollTop = container.scrollHeight;
+}
+
+function hideLandingTyping() {
+  document.getElementById('landingTyping')?.remove();
+}
+
+// ── Send message ──────────────────────────────────────────────────────────────
+async function sendLandingMsg() {
+  if (LC.isTyping || LC.sessionEnded) return;
+
+  const input   = document.getElementById('chInput');
+  const message = input.value.trim();
+  if (!message) return;
+
+  input.value = '';
+  resetInactivityTimer();
+
+  appendLandingMsg(message, 'user');
+  showLandingTyping();
+  LC.isTyping = true;
+
+  document.getElementById('chInput').disabled = true;
+  document.getElementById('chSend').disabled  = true;
+
+  try {
+    const res  = await fetch(LC.appsScriptUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        conversation_id: LC.conversationId,
+        message:         message,
+        timestamp:       new Date().toISOString(),
+        mode:            'landing',            // tells backend to use lean agent
+        prompt_id:       LC.promptId,
+        exchange_count:  LC.exchangeCount,
+        max_exchanges:   LC.maxExchanges
+      })
+    });
+
+    const data = await res.json();
+    hideLandingTyping();
+    LC.isTyping = false;
+
+    LC.exchangeCount++;
+    updateExchangeInfo();
+
+    if (data.session_ended || LC.exchangeCount >= LC.maxExchanges) {
+      appendLandingMsg(data.response || 'Thanks for chatting! Our team will follow up with you.', 'bot');
+      endSession('exchanges');
+    } else {
+      appendLandingMsg(data.response, 'bot');
+    }
+
+  } catch(err) {
+    hideLandingTyping();
+    LC.isTyping = false;
+    LC.exchangeCount++;
+    updateExchangeInfo();
+
+    // Fallback
+    const fallback = getLandingFallback(message);
+    appendLandingMsg(fallback, 'bot');
+
+    if (LC.exchangeCount >= LC.maxExchanges) endSession('exchanges');
+
+  } finally {
+    document.getElementById('chInput').disabled = false;
+    document.getElementById('chSend').disabled  = false;
+    document.getElementById('chInput').focus();
+  }
+}
+
+// ── Inactivity timer (counts down, ends session) ──────────────────────────────
+function startInactivityTimer() {
+  let remaining = LC.inactivitySecs;
+  updateTimerDisplay(remaining);
+
+  LC.inactivityTimer = setInterval(() => {
+    remaining--;
+    updateTimerDisplay(remaining);
+
+    if (remaining <= 10) {
+      document.getElementById('sessionTimer').classList.add('warning');
+    }
+
+    if (remaining <= 0) {
+      clearInterval(LC.inactivityTimer);
+      endSession('inactivity');
+    }
+  }, 1000);
+}
+
+function resetInactivityTimer() {
+  clearInterval(LC.inactivityTimer);
+  document.getElementById('sessionTimer').classList.remove('warning');
+  startInactivityTimer();
+}
+
+function updateTimerDisplay(secs) {
+  const m = Math.floor(secs / 60);
+  const s = secs % 60;
+  document.getElementById('timerDisplay').textContent =
+    m > 0 ? `${m}:${String(s).padStart(2,'0')}` : `${s}s`;
+}
+
+// ── End session ───────────────────────────────────────────────────────────────
+function endSession(reason) {
+  if (LC.sessionEnded) return;
+  LC.sessionEnded = true;
+
+  clearInterval(LC.inactivityTimer);
+  clearInterval(LC.countdownTimer);
+
+  document.getElementById('chInput').disabled  = true;
+  document.getElementById('chSend').disabled   = true;
+  document.getElementById('sessionTimer').textContent = '⏹ Done';
+  document.getElementById('sessionEndedBanner').classList.add('show');
+
+  if (reason === 'inactivity') {
+    appendLandingMsg(
+      'Looks like you stepped away — no problem! 😊\n\n' +
+      'Whenever you\'re ready, visit **deliytmedia.com** or email **hello@deliytmedia.com** and we\'ll pick up from here.',
+      'bot'
+    );
+  }
+}
+
+// ── Exchange counter display ──────────────────────────────────────────────────
+function updateExchangeInfo() {
+  const el = document.getElementById('exchangeInfo');
+  if (el) {
+    el.textContent = `${LC.exchangeCount} / ${LC.maxExchanges} exchanges`;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// CANCELLATION FLOW
+// Triggered when URL has ?cancel=APT_ID
+// ═══════════════════════════════════════════════════════════
+const CANCEL_STATE = {
+  aptId:      null,
+  step:       'greeting', // greeting → collect_name → collect_email → verify → confirm → done
+  name:       null,
+  email:      null,
+  booking:    null
+};
+
+function startCancellationFlow(aptId) {
+  CANCEL_STATE.aptId = aptId;
+  CANCEL_STATE.step  = 'greeting';
+
+  // Override inactivity to 3 minutes for cancellation
+  LC.inactivitySecs  = 180;
+
+  setTimeout(() => {
+    appendLandingMsg(
+      'Hi! 👋 I can help you cancel your strategy call booking.\n\n' +
+      'To verify it\'s you, what\'s your **full name**?',
+      'bot'
+    );
+    startInactivityTimer();
+
+    // Override send handler for cancellation mode
+    document.getElementById('chInput').onkeypress = (e) => {
+      if (e.key === 'Enter') handleCancelMsg();
+    };
+    document.getElementById('chSend').onclick = handleCancelMsg;
+
+  }, 600);
+}
+
+async function handleCancelMsg() {
+  if (LC.isTyping || LC.sessionEnded) return;
+  const input   = document.getElementById('chInput');
+  const message = input.value.trim();
+  if (!message) return;
+
+  input.value = '';
+  resetInactivityTimer();
+  appendLandingMsg(message, 'user');
+
+  switch (CANCEL_STATE.step) {
+
+    case 'greeting':
+      CANCEL_STATE.name = message;
+      CANCEL_STATE.step = 'collect_email';
+      setTimeout(() => {
+        appendLandingMsg(
+          `Thanks ${message}. And what's the **email address** you used when booking?`,
+          'bot'
+        );
+      }, 600);
+      break;
+
+    case 'collect_email':
+      CANCEL_STATE.email = message;
+      CANCEL_STATE.step  = 'verifying';
+      showLandingTyping();
+
+      try {
+        const res  = await fetch(
+          `${LC.appsScriptUrl}?action=cancelVerify&name=${encodeURIComponent(CANCEL_STATE.name)}&email=${encodeURIComponent(CANCEL_STATE.email)}`
+        );
+        const data = await res.json();
+        hideLandingTyping();
+
+        if (data.found) {
+          CANCEL_STATE.booking = data;
+          CANCEL_STATE.step    = 'confirm';
+          appendLandingMsg(
+            `I found your booking:\n\n` +
+            `📅 **Date:** ${data.date}\n` +
+            `⏰ **Time:** ${data.time}\n` +
+            `💼 **Topic:** ${data.service || 'Strategy Call'}\n\n` +
+            `Are you sure you want to **cancel** this booking? (Yes / No)`,
+            'bot'
+          );
+        } else if (data.chatted_before) {
+          appendLandingMsg(
+            `I can see you\'ve chatted with us before, but I couldn\'t find a confirmed booking under those details.\n\n` +
+            `Please email **hello@deliytmedia.com** with your booking reference and we\'ll sort it out quickly.`,
+            'bot'
+          );
+          CANCEL_STATE.step = 'done';
+        } else {
+          appendLandingMsg(
+            `I couldn\'t find a booking under **${CANCEL_STATE.name}** / **${CANCEL_STATE.email}**.\n\n` +
+            `Please double-check the details or email **hello@deliytmedia.com** directly with your booking reference.`,
+            'bot'
+          );
+          CANCEL_STATE.step = 'done';
+        }
+      } catch(err) {
+        hideLandingTyping();
+        appendLandingMsg(
+          `I\'m having trouble looking that up right now. Please email **hello@deliytmedia.com** with your booking ID and we\'ll cancel it for you.`,
+          'bot'
+        );
+        CANCEL_STATE.step = 'done';
+      }
+      break;
+
+    case 'confirm':
+      if (/yes|yeah|yep|ok|cancel it|proceed|sure/i.test(message)) {
+        showLandingTyping();
+        CANCEL_STATE.step = 'done';
+
+        try {
+          const res  = await fetch(LC.appsScriptUrl, {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({
+              conversation_id: LC.conversationId,
+              message:         '__CANCEL_BOOKING__',
+              appointment_id:  CANCEL_STATE.booking.appointment_id,
+              mode:            'cancel'
+            })
+          });
+          const data = await res.json();
+          hideLandingTyping();
+          appendLandingMsg(data.response || '✅ Your booking has been cancelled. A confirmation email is on its way.', 'bot');
+        } catch(err) {
+          hideLandingTyping();
+          appendLandingMsg(
+            `✅ Cancellation request received. We\'ll confirm via email within a few hours.\n\nReference: ${CANCEL_STATE.aptId}`,
+            'bot'
+          );
+        }
+
+        setTimeout(() => endSession('cancel_done'), 3000);
+
+      } else if (/no|keep|don|stay/i.test(message)) {
+        CANCEL_STATE.step = 'done';
+        appendLandingMsg(
+          `No problem — your booking is **still confirmed**. 👍\n\nWe\'ll see you on your scheduled call!`,
+          'bot'
+        );
+        setTimeout(() => endSession('cancel_declined'), 3000);
+      } else {
+        appendLandingMsg('Just to confirm — would you like to **cancel** this booking? Reply **Yes** to cancel or **No** to keep it.', 'bot');
+      }
+      break;
+
+    case 'done':
+    default:
+      appendLandingMsg('Is there anything else I can help with?', 'bot');
+  }
+}
+
+// ── Fallback responses ────────────────────────────────────────────────────────
+function getLandingFallback(msg) {
+  const l = msg.toLowerCase();
+  if (l.includes('price') || l.includes('cost'))
+    return 'Pricing depends on what you need built. WhatsApp agents start from ₦200k. SaaS platforms from ₦500k. Want a quick estimate?';
+  if (l.includes('whatsapp'))
+    return 'We build custom WhatsApp agents that handle customer inquiries 24/7 — ordering, booking, lead capture. What would yours need to do?';
+  if (l.includes('book') || l.includes('call'))
+    return 'Perfect — a strategy call is 30 minutes, free, no pressure. What\'s your name and email so I can get you booked?';
+  return 'Interesting! Tell me more about your business and what you\'re trying to solve.';
+}
+</script>
+</body>
+</html>

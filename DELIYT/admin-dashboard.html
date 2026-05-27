@@ -1,0 +1,1295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Deliytmedia — Agent Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg:       #0a0a0f;
+      --surface:  #14141f;
+      --elevated: #1c1c2e;
+      --border:   rgba(255,255,255,0.06);
+      --text:     #ffffff;
+      --muted:    #8888aa;
+      --lime:     #BFFF00;
+      --lime-dim: rgba(191,255,0,0.12);
+      --hot:      #ff4455;
+      --warm:     #ffaa00;
+      --cold:     #667eea;
+      --success:  #00e87a;
+    }
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+
+    /* ══════════════════════════════════════════
+       AUTH SCREENS
+    ══════════════════════════════════════════ */
+    .auth-wall {
+      position: fixed; inset: 0; background: var(--bg);
+      z-index: 9999; display: flex; align-items: center;
+      justify-content: center; padding: 1.5rem;
+    }
+    .auth-wall.hidden { display: none; }
+
+    .auth-card {
+      width: 100%; max-width: 420px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 24px; padding: 2.5rem;
+      animation: authFadeIn 0.4s ease;
+    }
+    @keyframes authFadeIn {
+      from { opacity:0; transform:translateY(20px) scale(0.97); }
+      to   { opacity:1; transform:translateY(0)    scale(1);    }
+    }
+    .auth-logo {
+      font-size: 1.6rem; font-weight: 900;
+      background: linear-gradient(135deg,#BFFF00,#7CFF00);
+      -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; color:transparent;
+      margin-bottom: 0.3rem;
+    }
+    .auth-subtitle { color:var(--muted); font-size:0.95rem; margin-bottom:2rem; }
+    .auth-label {
+      display:block; font-size:0.8rem; font-weight:700; color:var(--muted);
+      text-transform:uppercase; letter-spacing:0.5px; margin-bottom:0.5rem;
+    }
+    .auth-input {
+      width:100%; padding:0.95rem 1.1rem; background:var(--elevated);
+      border:1.5px solid var(--border); border-radius:12px;
+      color:var(--text); font-family:'Outfit',sans-serif; font-size:1rem;
+      margin-bottom:1.25rem; transition:border-color 0.2s; outline:none;
+    }
+    .auth-input:focus { border-color:var(--lime); }
+    .auth-input.error { border-color:var(--hot); }
+    .auth-btn {
+      width:100%; padding:1rem;
+      background:linear-gradient(135deg,#BFFF00,#7CFF00);
+      color:#0a0a0f; border:none; border-radius:12px;
+      font-family:'Outfit',sans-serif; font-size:1rem; font-weight:800;
+      cursor:pointer; transition:all 0.2s; margin-top:0.25rem;
+    }
+    .auth-btn:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(191,255,0,0.25); }
+    .auth-btn:disabled { opacity:0.5; cursor:not-allowed; transform:none; }
+    .auth-error {
+      display:none; background:rgba(255,68,85,0.1);
+      border:1px solid rgba(255,68,85,0.3); border-radius:10px;
+      padding:0.85rem 1rem; color:var(--hot); font-size:0.9rem; margin-bottom:1.25rem;
+    }
+    .auth-error.show  { display:block; }
+    .auth-success {
+      display:none; background:rgba(0,232,122,0.1);
+      border:1px solid rgba(0,232,122,0.3); border-radius:10px;
+      padding:0.85rem 1rem; color:var(--success); font-size:0.9rem; margin-bottom:1.25rem;
+    }
+    .auth-success.show { display:block; }
+    .auth-link {
+      background:none; border:none; color:var(--lime);
+      font-family:'Outfit',sans-serif; font-size:0.9rem; font-weight:600;
+      cursor:pointer; padding:0; text-decoration:underline; text-underline-offset:3px;
+    }
+    .auth-footer { margin-top:1.5rem; text-align:center; color:var(--muted); font-size:0.9rem; }
+    .auth-lockout {
+      display:none; text-align:center; padding:1rem;
+      background:rgba(255,68,85,0.05); border:1px solid rgba(255,68,85,0.2);
+      border-radius:10px; margin-bottom:1.25rem; color:var(--hot); font-size:0.9rem;
+    }
+    .auth-lockout.show { display:block; }
+    .lockout-timer { font-weight:800; font-size:1.2rem; display:block; margin-top:0.25rem; }
+    .attempts-left { font-size:0.8rem; color:var(--warm); margin-top:0.5rem; text-align:center; }
+    .strength-bar {
+      height:4px; border-radius:2px; background:var(--elevated);
+      margin-top:-0.75rem; margin-bottom:1.25rem; overflow:hidden;
+    }
+    .strength-fill { height:100%; border-radius:2px; transition:all 0.3s; width:0%; }
+    @keyframes shake {
+      0%,100%{transform:translateX(0)} 15%{transform:translateX(-8px)}
+      30%{transform:translateX(8px)}   45%{transform:translateX(-6px)}
+      60%{transform:translateX(6px)}   75%{transform:translateX(-4px)}
+      90%{transform:translateX(4px)}
+    }
+    .shake { animation:shake 0.5s ease; }
+
+    /* ── Layout ── */
+    .shell { display: flex; height: 100vh; overflow: hidden; }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: 240px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      padding: 2rem 1.25rem;
+      flex-shrink: 0;
+    }
+    .sidebar-logo {
+      font-size: 1.3rem;
+      font-weight: 900;
+      background: linear-gradient(135deg, #BFFF00, #7CFF00);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      color: transparent;
+      margin-bottom: 2.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.85rem 1rem;
+      border-radius: 10px;
+      cursor: pointer;
+      color: var(--muted);
+      font-weight: 600;
+      font-size: 0.95rem;
+      transition: all 0.2s;
+      margin-bottom: 0.25rem;
+      border: 1px solid transparent;
+      background: transparent;
+      width: 100%;
+      text-align: left;
+    }
+    .nav-item:hover { color: var(--text); background: var(--elevated); }
+    .nav-item.active {
+      color: var(--lime);
+      background: var(--lime-dim);
+      border-color: rgba(191,255,0,0.2);
+    }
+    .nav-badge {
+      margin-left: auto;
+      background: var(--hot);
+      color: white;
+      font-size: 0.7rem;
+      font-weight: 800;
+      padding: 2px 7px;
+      border-radius: 20px;
+    }
+    .sidebar-footer {
+      margin-top: auto;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+    }
+
+    /* ── Main ── */
+    .main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 2rem 2.5rem;
+    }
+    .main::-webkit-scrollbar { width: 6px; }
+    .main::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+    }
+    .page-title { font-size: 1.8rem; font-weight: 900; }
+    .page-subtitle { color: var(--muted); margin-top: 0.25rem; font-size: 0.95rem; }
+
+    /* ── Stats Row ── */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1.25rem;
+      margin-bottom: 2rem;
+    }
+    .stat-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      transition: all 0.3s;
+    }
+    .stat-box:hover { border-color: var(--lime); transform: translateY(-2px); }
+    .stat-box-label { font-size: 0.85rem; color: var(--muted); font-weight: 600; margin-bottom: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; }
+    .stat-box-value { font-size: 2.2rem; font-weight: 900; background: linear-gradient(135deg, #BFFF00, #7CFF00); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: transparent; }
+    .stat-box-sub { font-size: 0.85rem; color: var(--muted); margin-top: 0.5rem; }
+
+    /* ── Panels ── */
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      margin-bottom: 1.5rem;
+    }
+    .panel-header {
+      padding: 1.25rem 1.75rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .panel-title { font-size: 1rem; font-weight: 800; }
+    .panel-body { padding: 1.25rem 1.75rem; }
+
+    /* ── Table ── */
+    table { width: 100%; border-collapse: collapse; }
+    th {
+      text-align: left;
+      padding: 0.75rem 1rem;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid var(--border);
+    }
+    td {
+      padding: 1rem;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.9rem;
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--elevated); }
+
+    /* ── Badges ── */
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .badge-hot     { background: rgba(255,68,85,0.15);   color: var(--hot);     }
+    .badge-warm    { background: rgba(255,170,0,0.15);   color: var(--warm);    }
+    .badge-cold    { background: rgba(102,126,234,0.15); color: var(--cold);    }
+    .badge-pending { background: rgba(255,170,0,0.15);   color: var(--warm);    }
+    .badge-done    { background: rgba(0,232,122,0.15);   color: var(--success); }
+    .badge-new     { background: var(--lime-dim);        color: var(--lime);    }
+
+    /* ── Conversation Cards ── */
+    .conv-card {
+      padding: 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      margin-bottom: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .conv-card:hover { border-color: var(--lime); background: var(--elevated); }
+    .conv-card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
+    .conv-id { font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: var(--lime); }
+    .conv-time { font-size: 0.8rem; color: var(--muted); }
+    .conv-preview { color: var(--muted); font-size: 0.9rem; }
+    .conv-meta { display: flex; gap: 0.5rem; margin-top: 0.75rem; }
+
+    /* ── Message Thread (modal) ── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      width: 640px;
+      max-height: 80vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      animation: slideUp 0.3s ease;
+    }
+    @keyframes slideUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+    .modal-header {
+      padding: 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .modal-body { padding: 1.5rem; overflow-y: auto; flex: 1; }
+    .modal-close {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--elevated);
+      border: none;
+      color: var(--text);
+      font-size: 1.2rem;
+      cursor: pointer;
+    }
+    .thread-message { margin-bottom: 1rem; }
+    .thread-role { font-size: 0.8rem; font-weight: 700; margin-bottom: 0.4rem; text-transform: uppercase; }
+    .thread-role.user { color: var(--lime); }
+    .thread-role.assistant { color: var(--cold); }
+    .thread-bubble {
+      padding: 0.85rem 1.1rem;
+      border-radius: 12px;
+      font-size: 0.9rem;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+    .thread-bubble.user { background: var(--elevated); border: 1px solid var(--border); }
+    .thread-bubble.assistant { background: rgba(102,126,234,0.1); border: 1px solid rgba(102,126,234,0.2); }
+
+    /* ── State Viewer ── */
+    .state-pre {
+      background: var(--elevated);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      color: #BFFF00;
+      overflow-x: auto;
+      white-space: pre;
+    }
+
+    /* ── Buttons ── */
+    .btn {
+      padding: 0.65rem 1.25rem;
+      border-radius: 8px;
+      border: none;
+      font-family: 'Outfit', sans-serif;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 0.9rem;
+    }
+    .btn-primary { background: var(--lime); color: #0a0a0f; }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 15px var(--lime-dim); }
+    .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+    .btn-ghost:hover { color: var(--text); border-color: rgba(255,255,255,0.2); }
+    .btn-danger { background: rgba(255,68,85,0.15); color: var(--hot); border: 1px solid rgba(255,68,85,0.3); }
+
+    /* ── Search ── */
+    .search-box {
+      padding: 0.7rem 1rem;
+      background: var(--elevated);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.9rem;
+      min-width: 240px;
+    }
+    .search-box:focus { outline: none; border-color: var(--lime); }
+
+    /* ── Loading ── */
+    .loading-row td { text-align: center; padding: 3rem; color: var(--muted); }
+    .spinner {
+      width: 28px; height: 28px;
+      border: 3px solid var(--border);
+      border-top-color: var(--lime);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 0.75rem;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Empty state ── */
+    .empty { text-align: center; padding: 4rem 2rem; color: var(--muted); }
+    .empty-icon { font-size: 3rem; opacity: 0.3; margin-bottom: 1rem; }
+
+    /* ── Tabs ── */
+    .view { display: none; }
+    .view.active { display: block; }
+
+    /* ── Responsive ── */
+    @media (max-width: 1024px) {
+      .sidebar { display: none; }
+      .stats-row { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 640px) {
+      .main { padding: 1.5rem 1rem; }
+      .stats-row { grid-template-columns: 1fr; }
+      .modal { width: 95vw; }
+    }
+  </style>
+</head>
+<body>
+
+
+<!-- ══ LOGIN WALL ══════════════════════════════════════════════════════════ -->
+<div class="auth-wall" id="authWall">
+
+  <!-- SIGN IN CARD -->
+  <div class="auth-card" id="cardSignIn">
+    <div class="auth-logo">⚡ Deliytmedia</div>
+    <div class="auth-subtitle">Admin Dashboard — sign in to continue</div>
+
+    <div class="auth-lockout" id="lockoutMsg">
+      Too many failed attempts.
+      <span class="lockout-timer" id="lockoutTimer">30s</span>
+    </div>
+
+    <div class="auth-error" id="signInError">Incorrect password. Please try again.</div>
+
+    <label class="auth-label" for="signInPwd">Password</label>
+    <input class="auth-input" type="password" id="signInPwd"
+           placeholder="Enter your password"
+           onkeypress="if(event.key==='Enter') doSignIn()">
+
+    <div class="attempts-left" id="attemptsLeft"></div>
+
+    <button class="auth-btn" id="signInBtn" onclick="doSignIn()">Sign In</button>
+
+    <div class="auth-footer">
+      Forgot your password? <button class="auth-link" onclick="showReset()">Reset it</button>
+    </div>
+  </div>
+
+  <!-- RESET PASSWORD CARD -->
+  <div class="auth-card" id="cardReset" style="display:none">
+    <div class="auth-logo">⚡ Deliytmedia</div>
+    <div class="auth-subtitle">Set a new password</div>
+
+    <div class="auth-error"    id="resetError"></div>
+    <div class="auth-success"  id="resetSuccess">Password updated! You can now sign in.</div>
+
+    <label class="auth-label" for="resetCurrent">Current Password</label>
+    <input class="auth-input" type="password" id="resetCurrent" placeholder="Your current password">
+
+    <label class="auth-label" for="resetNew">New Password</label>
+    <input class="auth-input" type="password" id="resetNew"
+           placeholder="Min 8 characters" oninput="checkStrength(this.value)">
+    <div class="strength-bar"><div class="strength-fill" id="strengthFill"></div></div>
+
+    <label class="auth-label" for="resetConfirm">Confirm New Password</label>
+    <input class="auth-input" type="password" id="resetConfirm" placeholder="Repeat new password"
+           onkeypress="if(event.key==='Enter') doReset()">
+
+    <button class="auth-btn" onclick="doReset()">Update Password</button>
+
+    <div class="auth-footer">
+      <button class="auth-link" onclick="showSignIn()">← Back to Sign In</button>
+    </div>
+  </div>
+
+</div>
+<!-- ══ END AUTH WALL ═══════════════════════════════════════════════════════ -->
+
+<div class="shell">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">⚡ Deliytmedia</div>
+    <button class="nav-item active" onclick="showView('overview')">📊 Overview</button>
+    <button class="nav-item" onclick="showView('conversations')">💬 Conversations</button>
+    <button class="nav-item" onclick="showView('leads')">🔥 Leads</button>
+    <button class="nav-item" onclick="showView('appointments')">📅 Appointments</button>
+    <button class="nav-item" onclick="showView('escalations')">⚠️ Escalations <span class="nav-badge" id="escBadge">0</span></button>
+    <button class="nav-item" onclick="showView('knowledge')">🧠 Knowledge Base</button>
+    <div class="sidebar-footer">
+      <button class="nav-item" onclick="refreshAll()">🔄 Refresh</button>
+      <button class="nav-item" style="color:#ff4455;margin-top:0.5rem" onclick="signOut()">🚪 Sign Out</button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+
+    <!-- ── Overview ── -->
+    <div class="view active" id="view-overview">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Agent Dashboard</div>
+          <div class="page-subtitle">Live overview of chatbot activity</div>
+        </div>
+        <button class="btn btn-primary" onclick="refreshAll()">↻ Refresh</button>
+      </div>
+
+      <div class="stats-row" id="statsRow">
+        <div class="stat-box">
+          <div class="stat-box-label">Total Conversations</div>
+          <div class="stat-box-value" id="st-convs">—</div>
+          <div class="stat-box-sub">All time</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-box-label">Hot Leads</div>
+          <div class="stat-box-value" id="st-hot">—</div>
+          <div class="stat-box-sub">Need follow-up</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-box-label">Appointments</div>
+          <div class="stat-box-value" id="st-apts">—</div>
+          <div class="stat-box-sub">Pending confirmation</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-box-label">Escalations</div>
+          <div class="stat-box-value" id="st-escs">—</div>
+          <div class="stat-box-sub">Awaiting response</div>
+        </div>
+      </div>
+
+      <!-- Recent Conversations -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Recent Conversations</div>
+          <button class="btn btn-ghost" onclick="showView('conversations')">View all →</button>
+        </div>
+        <div class="panel-body">
+          <div id="recentConvs">
+            <div class="empty"><div class="empty-icon">💬</div>Loading conversations...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hot Leads Table -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">🔥 Hot Leads</div>
+          <button class="btn btn-ghost" onclick="showView('leads')">View all →</button>
+        </div>
+        <div class="panel-body" style="padding:0">
+          <table>
+            <thead><tr>
+              <th>Name</th><th>Email</th><th>Service</th><th>Score</th><th>Priority</th>
+            </tr></thead>
+            <tbody id="hotLeadsTable">
+              <tr class="loading-row"><td colspan="5"><div class="spinner"></div>Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Conversations ── -->
+    <div class="view" id="view-conversations">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Conversations</div>
+          <div class="page-subtitle" id="convCount">All conversations</div>
+        </div>
+        <input type="text" class="search-box" placeholder="Search by ID or message..." id="convSearch" oninput="filterConversations()">
+      </div>
+      <div id="allConvs">
+        <div class="empty"><div class="empty-icon">💬</div>Loading...</div>
+      </div>
+    </div>
+
+    <!-- ── Leads ── -->
+    <div class="view" id="view-leads">
+      <div class="page-header">
+        <div><div class="page-title">Leads</div><div class="page-subtitle">All qualified leads from chatbot</div></div>
+      </div>
+      <div class="panel">
+        <div class="panel-body" style="padding:0">
+          <table>
+            <thead><tr>
+              <th>Date</th><th>Name</th><th>Email</th><th>Phone</th>
+              <th>Service</th><th>Intent</th><th>Score</th><th>Priority</th>
+            </tr></thead>
+            <tbody id="allLeadsTable">
+              <tr class="loading-row"><td colspan="8"><div class="spinner"></div>Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Appointments ── -->
+    <div class="view" id="view-appointments">
+      <div class="page-header">
+        <div><div class="page-title">Appointments</div><div class="page-subtitle">Strategy calls booked via chatbot</div></div>
+      </div>
+      <div class="panel">
+        <div class="panel-body" style="padding:0">
+          <table>
+            <thead><tr>
+              <th>Date</th><th>Name</th><th>Email</th><th>Phone</th>
+              <th>Service Interest</th><th>Preferred Time</th><th>Status</th>
+            </tr></thead>
+            <tbody id="appointmentsTable">
+              <tr class="loading-row"><td colspan="7"><div class="spinner"></div>Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Escalations ── -->
+    <div class="view" id="view-escalations">
+      <div class="page-header">
+        <div><div class="page-title">Escalations</div><div class="page-subtitle">Human handoff requests</div></div>
+      </div>
+      <div class="panel">
+        <div class="panel-body" style="padding:0">
+          <table>
+            <thead><tr>
+              <th>Date</th><th>Name</th><th>Email</th><th>Question</th>
+              <th>Priority</th><th>Status</th>
+            </tr></thead>
+            <tbody id="escalationsTable">
+              <tr class="loading-row"><td colspan="6"><div class="spinner"></div>Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Knowledge Base ── -->
+    <div class="view" id="view-knowledge">
+      <div class="page-header">
+        <div><div class="page-title">Knowledge Base</div><div class="page-subtitle">What the agent knows — edit directly in Google Sheets</div></div>
+        <button class="btn btn-primary" onclick="openSheetsKB()">✏️ Edit in Sheets</button>
+      </div>
+      <div class="panel">
+        <div class="panel-body" style="padding:0">
+          <table>
+            <thead><tr>
+              <th>Category</th><th>Topic</th><th>Keywords</th><th>Answer (preview)</th><th>Active</th>
+            </tr></thead>
+            <tbody id="kbTable">
+              <tr class="loading-row"><td colspan="5"><div class="spinner"></div>Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="panel" style="margin-top:1.5rem">
+        <div class="panel-header"><div class="panel-title">📖 How to edit the Knowledge Base</div></div>
+        <div class="panel-body" style="color: var(--muted); line-height: 1.8; font-size: 0.95rem;">
+          <p>The Knowledge Base lives in your Google Sheet under the <strong style="color:var(--lime)">Knowledge_Base</strong> tab.</p>
+          <br>
+          <p><strong style="color:var(--text)">Columns:</strong></p>
+          <ul style="margin: 0.5rem 0 1rem 1.5rem;">
+            <li><strong style="color:var(--text)">category</strong> — Group (services, pricing, process, faq, trust)</li>
+            <li><strong style="color:var(--text)">topic</strong> — Short name for this entry</li>
+            <li><strong style="color:var(--text)">keywords</strong> — Comma-separated words that trigger this entry</li>
+            <li><strong style="color:var(--text)">answer</strong> — The response the agent gives when this entry matches</li>
+            <li><strong style="color:var(--text)">active</strong> — TRUE or FALSE (FALSE hides it from the agent)</li>
+          </ul>
+          <p>The agent searches by keyword match. The more specific your keywords, the better the match quality.</p>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Conversation Thread Modal -->
+<div class="modal-overlay" id="convModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div style="font-weight:800; font-size:1.1rem" id="modalTitle">Conversation</div>
+        <div style="color:var(--muted); font-size:0.85rem; margin-top:3px" id="modalSub"></div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="modalStateView" style="margin-bottom:1.5rem; display:none">
+        <div style="font-size:0.85rem; font-weight:700; color:var(--muted); text-transform:uppercase; margin-bottom:0.5rem">Agent State</div>
+        <pre class="state-pre" id="stateJson"></pre>
+      </div>
+      <div id="threadMessages"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── CONFIG ────────────────────────────────────────────────────────────────
+  const DASH_CONFIG = {
+    appsScriptUrl: 'YOUR_APPS_SCRIPT_WEB_APP_URL_HERE',
+    sheetsUrl:     'https://docs.google.com/spreadsheets/d/YOUR_SPREADSHEET_ID_HERE/edit'
+  };
+
+  let allConversationsData = [];
+  let allLeadsData = [];
+  let currentView = 'overview';
+
+  // ── VIEW SWITCHER ──────────────────────────────────────────────────────────
+  function showView(name) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById('view-' + name).classList.add('active');
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    event?.target?.classList.add('active');
+    currentView = name;
+    loadViewData(name);
+  }
+
+  // ── LOAD DATA FOR EACH VIEW ───────────────────────────────────────────────
+  async function loadViewData(view) {
+    switch(view) {
+      case 'overview':      await loadOverview();      break;
+      case 'conversations': await loadConversations(); break;
+      case 'leads':         await loadLeads();         break;
+      case 'appointments':  await loadAppointments();  break;
+      case 'escalations':   await loadEscalations();   break;
+      case 'knowledge':     await loadKnowledge();     break;
+    }
+  }
+
+  async function refreshAll() { await loadViewData(currentView); }
+
+  // ── FETCH FROM APPS SCRIPT ────────────────────────────────────────────────
+  async function fetchDashData(sheet) {
+    try {
+      const url = `${DASH_CONFIG.appsScriptUrl}?action=getDashData&sheet=${sheet}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      return data.rows || [];
+    } catch(e) {
+      // Return mock data for testing before backend is connected
+      return getMockData(sheet);
+    }
+  }
+
+  // ── OVERVIEW ──────────────────────────────────────────────────────────────
+  async function loadOverview() {
+    const [convs, leads, apts, escs] = await Promise.all([
+      fetchDashData('States'),
+      fetchDashData('Leads'),
+      fetchDashData('Appointments'),
+      fetchDashData('Escalations')
+    ]);
+
+    const hotLeads   = leads.filter(r => r[9] === 'hot');
+    const pendingApt = apts.filter(r => r[8] === 'PENDING');
+    const pendingEsc = escs.filter(r => r[7] === 'PENDING');
+
+    document.getElementById('st-convs').textContent = convs.length;
+    document.getElementById('st-hot').textContent   = hotLeads.length;
+    document.getElementById('st-apts').textContent  = pendingApt.length;
+    document.getElementById('st-escs').textContent  = pendingEsc.length;
+    document.getElementById('escBadge').textContent = pendingEsc.length;
+    document.getElementById('escBadge').style.display = pendingEsc.length > 0 ? 'inline' : 'none';
+
+    // Recent convs
+    renderRecentConvs(convs.slice(-5).reverse());
+
+    // Hot leads table
+    renderHotLeads(hotLeads.slice(0, 8));
+  }
+
+  function renderRecentConvs(convs) {
+    const el = document.getElementById('recentConvs');
+    if (!convs.length) {
+      el.innerHTML = '<div class="empty"><div class="empty-icon">💬</div>No conversations yet. The chatbot is ready and waiting.</div>';
+      return;
+    }
+    el.innerHTML = convs.map(row => {
+      let state = {};
+      try { state = JSON.parse(row[1]); } catch(e) {}
+      return `
+        <div class="conv-card" onclick="openConversation('${row[0]}')">
+          <div class="conv-card-top">
+            <div class="conv-id">${row[0]}</div>
+            <div class="conv-time">${formatTime(state.updated_at)}</div>
+          </div>
+          <div class="conv-preview">${state.intent ? 'Intent: ' + state.intent.replace(/_/g,' ') : 'Conversation in progress'}</div>
+          <div class="conv-meta">
+            <span class="badge badge-${state.step === 'COMPLETED' ? 'done' : 'new'}">${state.step || 'ACTIVE'}</span>
+            ${state.lead_priority ? `<span class="badge badge-${state.lead_priority}">${state.lead_priority}</span>` : ''}
+            <span style="font-size:0.8rem; color:var(--muted); margin-left:auto">${state.message_count || 0} messages</span>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  function renderHotLeads(leads) {
+    const tbody = document.getElementById('hotLeadsTable');
+    if (!leads.length) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:2rem; color:var(--muted)">No hot leads yet.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = leads.map(r => `
+      <tr>
+        <td><strong>${r[2] || '—'}</strong></td>
+        <td><a href="mailto:${r[3]}" style="color:var(--lime); text-decoration:none">${r[3] || '—'}</a></td>
+        <td>${formatService(r[6])}</td>
+        <td><strong style="color:var(--lime)">${r[8]}</strong></td>
+        <td><span class="badge badge-${r[9]}">${r[9]}</span></td>
+      </tr>`).join('');
+  }
+
+  // ── CONVERSATIONS ─────────────────────────────────────────────────────────
+  async function loadConversations() {
+    const data = await fetchDashData('States');
+    allConversationsData = data.reverse();
+    document.getElementById('convCount').textContent = `${data.length} total conversations`;
+    renderConversations(allConversationsData);
+  }
+
+  function renderConversations(convs) {
+    const el = document.getElementById('allConvs');
+    if (!convs.length) {
+      el.innerHTML = '<div class="empty"><div class="empty-icon">💬</div>No conversations yet.</div>';
+      return;
+    }
+    el.innerHTML = convs.map(row => {
+      let state = {};
+      try { state = JSON.parse(row[1]); } catch(e) {}
+      return `
+        <div class="conv-card" onclick="openConversation('${row[0]}')">
+          <div class="conv-card-top">
+            <div class="conv-id">${row[0]}</div>
+            <div class="conv-time">${formatTime(state.updated_at)}</div>
+          </div>
+          <div class="conv-preview">
+            ${state.collected?.name ? `<strong>${state.collected.name}</strong> · ` : ''}
+            ${state.collected?.email || ''}
+            ${state.intent ? ' · ' + state.intent.replace(/_/g,' ') : ''}
+          </div>
+          <div class="conv-meta">
+            <span class="badge badge-${state.step === 'COMPLETED' ? 'done' : 'new'}">${state.step || 'ACTIVE'}</span>
+            ${state.lead_priority ? `<span class="badge badge-${state.lead_priority}">${state.lead_priority}</span>` : ''}
+            ${state.intent ? `<span class="badge" style="background:rgba(102,126,234,0.1);color:#8899ff">${state.intent.replace(/_/g,' ')}</span>` : ''}
+            <span style="font-size:0.8rem; color:var(--muted); margin-left:auto">${state.message_count || 0} messages</span>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  function filterConversations() {
+    const q = document.getElementById('convSearch').value.toLowerCase();
+    if (!q) { renderConversations(allConversationsData); return; }
+    const filtered = allConversationsData.filter(row => {
+      const s = JSON.stringify(row).toLowerCase();
+      return s.includes(q);
+    });
+    renderConversations(filtered);
+  }
+
+  // ── LEADS ─────────────────────────────────────────────────────────────────
+  async function loadLeads() {
+    const data = await fetchDashData('Leads');
+    allLeadsData = data.reverse();
+    const tbody = document.getElementById('allLeadsTable');
+    if (!allLeadsData.length) {
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:3rem;color:var(--muted)">No leads yet.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = allLeadsData.map(r => `
+      <tr>
+        <td style="white-space:nowrap">${formatDate(r[0])}</td>
+        <td><strong>${r[2] || '—'}</strong></td>
+        <td>${r[3] ? `<a href="mailto:${r[3]}" style="color:var(--lime);text-decoration:none">${r[3]}</a>` : '—'}</td>
+        <td>${r[4] || '—'}</td>
+        <td>${formatService(r[6])}</td>
+        <td style="color:var(--muted);font-size:0.85rem">${r[7]?.replace(/_/g,' ') || '—'}</td>
+        <td><strong style="color:var(--lime)">${r[8] || 0}</strong></td>
+        <td><span class="badge badge-${r[9]}">${r[9] || 'cold'}</span></td>
+      </tr>`).join('');
+  }
+
+  // ── APPOINTMENTS ──────────────────────────────────────────────────────────
+  async function loadAppointments() {
+    const data = await fetchDashData('Appointments');
+    const tbody = document.getElementById('appointmentsTable');
+    const apts = data.reverse();
+    if (!apts.length) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:3rem;color:var(--muted)">No appointments yet.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = apts.map(r => `
+      <tr>
+        <td style="white-space:nowrap">${formatDate(r[1])}</td>
+        <td><strong>${r[2] || '—'}</strong></td>
+        <td>${r[3] ? `<a href="mailto:${r[3]}" style="color:var(--lime);text-decoration:none">${r[3]}</a>` : '—'}</td>
+        <td>${r[4] || '—'}</td>
+        <td style="max-width:200px">${r[6] || '—'}</td>
+        <td>${r[7] || 'Flexible'}</td>
+        <td><span class="badge badge-${r[8]==='PENDING'?'pending':'done'}">${r[8] || 'PENDING'}</span></td>
+      </tr>`).join('');
+  }
+
+  // ── ESCALATIONS ───────────────────────────────────────────────────────────
+  async function loadEscalations() {
+    const data = await fetchDashData('Escalations');
+    const tbody = document.getElementById('escalationsTable');
+    const escs = data.reverse();
+    if (!escs.length) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:3rem;color:var(--muted)">No escalations yet.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = escs.map(r => `
+      <tr>
+        <td style="white-space:nowrap">${formatDate(r[1])}</td>
+        <td><strong>${r[5] || '—'}</strong></td>
+        <td>${r[4] ? `<a href="mailto:${r[4]}" style="color:var(--lime);text-decoration:none">${r[4]}</a>` : '—'}</td>
+        <td style="max-width:240px;color:var(--muted)">${r[6] || '—'}</td>
+        <td><span class="badge badge-${r[3]}">${r[3] || 'medium'}</span></td>
+        <td><span class="badge badge-${r[7]==='PENDING'?'pending':'done'}">${r[7] || 'PENDING'}</span></td>
+      </tr>`).join('');
+  }
+
+  // ── KNOWLEDGE BASE ────────────────────────────────────────────────────────
+  async function loadKnowledge() {
+    const data = await fetchDashData('Knowledge_Base');
+    const tbody = document.getElementById('kbTable');
+    if (!data.length) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:3rem;color:var(--muted)">Knowledge base is empty.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = data.map(r => `
+      <tr>
+        <td><span class="badge badge-new">${r[0]}</span></td>
+        <td><strong>${r[1]}</strong></td>
+        <td style="color:var(--muted);font-size:0.8rem;max-width:180px">${r[2]}</td>
+        <td style="color:var(--muted);max-width:300px;font-size:0.85rem">${(r[3]||'').slice(0,100)}${r[3]?.length > 100 ? '...' : ''}</td>
+        <td><span class="badge badge-${r[5]===false||r[5]==='FALSE'?'pending':'done'}">${r[5]===false||r[5]==='FALSE'?'OFF':'ON'}</span></td>
+      </tr>`).join('');
+  }
+
+  function openSheetsKB() { window.open(DASH_CONFIG.sheetsUrl + '#gid=0', '_blank'); }
+
+  // ── CONVERSATION MODAL ────────────────────────────────────────────────────
+  async function openConversation(convId) {
+    document.getElementById('modalTitle').textContent = convId;
+    document.getElementById('convModal').classList.add('active');
+    document.getElementById('threadMessages').innerHTML = '<div class="spinner"></div>';
+
+    const [msgs, states] = await Promise.all([
+      fetchDashData('Messages'),
+      fetchDashData('States')
+    ]);
+
+    // Find state for this conversation
+    const stateRow = states.find(r => r[0] === convId);
+    if (stateRow) {
+      try {
+        const state = JSON.parse(stateRow[1]);
+        document.getElementById('modalSub').textContent =
+          `Step: ${state.step} · Intent: ${state.intent || 'none'} · Score: ${state.lead_score || 0}`;
+        document.getElementById('stateJson').textContent = JSON.stringify(state, null, 2);
+        document.getElementById('modalStateView').style.display = 'block';
+      } catch(e) {}
+    }
+
+    // Filter messages for this conversation
+    const thread = msgs.filter(r => r[1] === convId);
+    if (!thread.length) {
+      document.getElementById('threadMessages').innerHTML =
+        '<div class="empty"><div class="empty-icon">💬</div>No messages found.</div>';
+      return;
+    }
+
+    document.getElementById('threadMessages').innerHTML = thread.map(r => `
+      <div class="thread-message">
+        <div class="thread-role ${r[2]}">${r[2] === 'user' ? '👤 User' : '🤖 Agent'} · ${formatTime(r[0])}</div>
+        <div class="thread-bubble ${r[2]}">${r[3]}</div>
+      </div>`).join('');
+  }
+
+  function closeModal() {
+    document.getElementById('convModal').classList.remove('active');
+    document.getElementById('modalStateView').style.display = 'none';
+  }
+
+  // ── MOCK DATA (for testing without backend) ───────────────────────────────
+  function getMockData(sheet) {
+    const now = new Date().toISOString();
+    if (sheet === 'States') return [
+      ['CONV_001', JSON.stringify({ step:'COMPLETED', intent:'book_appointment', collected:{name:'Tunde Adeyemi',email:'tunde@mybiz.com',phone:'+2348012345678',service_interest:'WhatsApp Agent'}, lead_score:75, lead_priority:'hot', message_count:8, updated_at:now })],
+      ['CONV_002', JSON.stringify({ step:'COLLECTING', intent:'get_estimate', collected:{service_type:'saas_platform'}, lead_score:30, lead_priority:'warm', message_count:4, updated_at:now })]
+    ];
+    if (sheet === 'Leads') return [
+      [now,'CONV_001','Tunde Adeyemi','tunde@mybiz.com','+2348012345678','Restaurant','whatsapp_agent','book_appointment',75,'hot'],
+      [now,'CONV_002','','','','','saas_platform','get_estimate',30,'warm']
+    ];
+    if (sheet === 'Appointments') return [
+      ['APT_001',now,'Tunde Adeyemi','tunde@mybiz.com','+2348012345678','','WhatsApp Agent for restaurant','Tomorrow 2pm','PENDING','CONV_001']
+    ];
+    if (sheet === 'Escalations') return [];
+    if (sheet === 'Messages') return [
+      [now,'CONV_001','user','Hi, I need a WhatsApp chatbot for my restaurant'],
+      [now,'CONV_001','assistant',"Hey! A WhatsApp agent for a restaurant is exactly what we build. What's your name?"],
+      [now,'CONV_001','user','Tunde Adeyemi'],
+      [now,'CONV_001','assistant',"Nice to meet you Tunde! What's your email?"]
+    ];
+    if (sheet === 'Knowledge_Base') return [
+      ['services','overview','services,what do you do','Deliytmedia builds smart business systems...', now, true],
+      ['pricing','whatsapp agent','whatsapp price,chatbot price','WhatsApp Sales Agents start from ₦200,000...', now, true]
+    ];
+    return [];
+  }
+
+  // ── UTILS ─────────────────────────────────────────────────────────────────
+  function formatTime(ts) {
+    if (!ts) return '—';
+    try {
+      const d = new Date(ts);
+      const diff = Date.now() - d.getTime();
+      if (diff < 60000) return 'just now';
+      if (diff < 3600000) return Math.floor(diff/60000) + 'm ago';
+      if (diff < 86400000) return Math.floor(diff/3600000) + 'h ago';
+      return d.toLocaleDateString('en-NG', {day:'numeric',month:'short'});
+    } catch(e) { return ts; }
+  }
+
+  function formatDate(ts) {
+    if (!ts) return '—';
+    try { return new Date(ts).toLocaleDateString('en-NG',{day:'numeric',month:'short',year:'numeric'}); }
+    catch(e) { return ts; }
+  }
+
+  function formatService(code) {
+    return {'whatsapp_agent':'WhatsApp Agent','saas_platform':'SaaS Platform','customer_support':'Support System','social_media':'Social Media','mobile_app':'Mobile App'}[code] || code || '—';
+  }
+
+  // Close modal on overlay click
+  document.getElementById('convModal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+  });
+
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // AUTH SYSTEM — Option A (client-side password gate)
+  // ═══════════════════════════════════════════════════════════════════════
+
+  const AUTH = {
+    // ⚠️  CHANGE THIS to your password before deploying
+    DEFAULT_PASSWORD: 'Deliy@2026',
+    SESSION_KEY:  'dm_admin_auth',
+    PASS_KEY:     'dm_admin_pass',
+    ATTEMPTS_KEY: 'dm_login_attempts',
+    LOCKOUT_KEY:  'dm_lockout_until',
+    MAX_ATTEMPTS: 5,
+    LOCKOUT_SECS: 30
+  };
+
+  // ── On load: check session ────────────────────────────────────────────
+  (function initAuth() {
+    const authed = sessionStorage.getItem(AUTH.SESSION_KEY);
+    if (authed === 'true') {
+      document.getElementById('authWall').classList.add('hidden');
+    } else {
+      // Dashboard stays hidden until authed — block interaction
+      document.querySelector('.shell').style.visibility = 'hidden';
+    }
+  })();
+
+  // ── Get stored password (first time = default) ────────────────────────
+  function getStoredPassword() {
+    return localStorage.getItem(AUTH.PASS_KEY) || AUTH.DEFAULT_PASSWORD;
+  }
+
+  // ── SIGN IN ───────────────────────────────────────────────────────────
+  function doSignIn() {
+    const input   = document.getElementById('signInPwd');
+    const errorEl = document.getElementById('signInError');
+    const btnEl   = document.getElementById('signInBtn');
+    const pwd     = input.value;
+
+    // Check lockout
+    const lockUntil = parseInt(localStorage.getItem(AUTH.LOCKOUT_KEY) || '0');
+    if (Date.now() < lockUntil) return; // still locked — button is disabled
+
+    errorEl.classList.remove('show');
+    input.classList.remove('error');
+
+    if (!pwd) {
+      input.classList.add('error');
+      input.focus();
+      return;
+    }
+
+    if (pwd === getStoredPassword()) {
+      // ✅ Correct
+      sessionStorage.setItem(AUTH.SESSION_KEY, 'true');
+      localStorage.removeItem(AUTH.ATTEMPTS_KEY);
+      localStorage.removeItem(AUTH.LOCKOUT_KEY);
+
+      // Fade out auth wall
+      const wall = document.getElementById('authWall');
+      wall.style.transition = 'opacity 0.4s';
+      wall.style.opacity = '0';
+      setTimeout(() => {
+        wall.classList.add('hidden');
+        document.querySelector('.shell').style.visibility = 'visible';
+        loadOverview();
+      }, 400);
+
+    } else {
+      // ❌ Wrong — track attempts
+      let attempts = parseInt(localStorage.getItem(AUTH.ATTEMPTS_KEY) || '0') + 1;
+      localStorage.setItem(AUTH.ATTEMPTS_KEY, attempts);
+
+      input.value = '';
+      input.classList.add('error');
+      errorEl.classList.add('show');
+      document.getElementById('cardSignIn').classList.add('shake');
+      setTimeout(() => document.getElementById('cardSignIn').classList.remove('shake'), 500);
+
+      const remaining = AUTH.MAX_ATTEMPTS - attempts;
+
+      if (attempts >= AUTH.MAX_ATTEMPTS) {
+        // Lockout
+        const until = Date.now() + (AUTH.LOCKOUT_SECS * 1000);
+        localStorage.setItem(AUTH.LOCKOUT_KEY, until);
+        localStorage.removeItem(AUTH.ATTEMPTS_KEY);
+        startLockoutTimer(AUTH.LOCKOUT_SECS);
+      } else {
+        document.getElementById('attemptsLeft').textContent =
+          remaining + ' attempt' + (remaining === 1 ? '' : 's') + ' remaining';
+      }
+    }
+  }
+
+  // ── Lockout countdown ─────────────────────────────────────────────────
+  function startLockoutTimer(seconds) {
+    const lockEl  = document.getElementById('lockoutMsg');
+    const timerEl = document.getElementById('lockoutTimer');
+    const btnEl   = document.getElementById('signInBtn');
+    const attEl   = document.getElementById('attemptsLeft');
+    const errEl   = document.getElementById('signInError');
+
+    lockEl.classList.add('show');
+    errEl.classList.remove('show');
+    attEl.textContent = '';
+    btnEl.disabled = true;
+
+    let remaining = seconds;
+    timerEl.textContent = remaining + 's';
+
+    const tick = setInterval(() => {
+      remaining--;
+      timerEl.textContent = remaining + 's';
+      if (remaining <= 0) {
+        clearInterval(tick);
+        lockEl.classList.remove('show');
+        btnEl.disabled = false;
+        localStorage.removeItem(AUTH.LOCKOUT_KEY);
+      }
+    }, 1000);
+  }
+
+  // ── Check if currently locked out on page load ────────────────────────
+  (function checkExistingLockout() {
+    const lockUntil = parseInt(localStorage.getItem(AUTH.LOCKOUT_KEY) || '0');
+    if (Date.now() < lockUntil) {
+      const secsLeft = Math.ceil((lockUntil - Date.now()) / 1000);
+      startLockoutTimer(secsLeft);
+    }
+  })();
+
+  // ── RESET PASSWORD ────────────────────────────────────────────────────
+  function showReset() {
+    document.getElementById('cardSignIn').style.display = 'none';
+    document.getElementById('cardReset').style.display  = 'block';
+    document.getElementById('cardReset').style.animation = 'authFadeIn 0.3s ease';
+    clearResetForm();
+  }
+
+  function showSignIn() {
+    document.getElementById('cardReset').style.display  = 'none';
+    document.getElementById('cardSignIn').style.display = 'block';
+    document.getElementById('cardSignIn').style.animation = 'authFadeIn 0.3s ease';
+    document.getElementById('signInError').classList.remove('show');
+    document.getElementById('signInPwd').value = '';
+  }
+
+  function doReset() {
+    const currentEl  = document.getElementById('resetCurrent');
+    const newEl      = document.getElementById('resetNew');
+    const confirmEl  = document.getElementById('resetConfirm');
+    const errorEl    = document.getElementById('resetError');
+    const successEl  = document.getElementById('resetSuccess');
+
+    const current  = currentEl.value;
+    const newPwd   = newEl.value;
+    const confirm  = confirmEl.value;
+
+    // Reset states
+    errorEl.classList.remove('show');
+    successEl.classList.remove('show');
+    [currentEl, newEl, confirmEl].forEach(el => el.classList.remove('error'));
+
+    // Validate current password
+    if (current !== getStoredPassword()) {
+      errorEl.textContent = 'Current password is incorrect.';
+      errorEl.classList.add('show');
+      currentEl.classList.add('error');
+      document.getElementById('cardReset').classList.add('shake');
+      setTimeout(() => document.getElementById('cardReset').classList.remove('shake'), 500);
+      return;
+    }
+
+    // Validate new password length
+    if (newPwd.length < 8) {
+      errorEl.textContent = 'New password must be at least 8 characters.';
+      errorEl.classList.add('show');
+      newEl.classList.add('error');
+      return;
+    }
+
+    // Validate match
+    if (newPwd !== confirm) {
+      errorEl.textContent = 'New passwords do not match.';
+      errorEl.classList.add('show');
+      confirmEl.classList.add('error');
+      return;
+    }
+
+    // Save new password
+    localStorage.setItem(AUTH.PASS_KEY, newPwd);
+
+    // Show success, clear form, redirect to sign in after 2s
+    successEl.classList.add('show');
+    clearResetForm();
+
+    setTimeout(() => {
+      showSignIn();
+    }, 2000);
+  }
+
+  function clearResetForm() {
+    ['resetCurrent','resetNew','resetConfirm'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) { el.value = ''; el.classList.remove('error'); }
+    });
+    document.getElementById('resetError').classList.remove('show');
+    document.getElementById('resetSuccess').classList.remove('show');
+    document.getElementById('strengthFill').style.width = '0%';
+    document.getElementById('strengthFill').style.background = '';
+  }
+
+  // ── Password strength meter ───────────────────────────────────────────
+  function checkStrength(pwd) {
+    const fill = document.getElementById('strengthFill');
+    let score = 0;
+    if (pwd.length >= 8)                       score++;
+    if (pwd.length >= 12)                      score++;
+    if (/[A-Z]/.test(pwd))                     score++;
+    if (/[0-9]/.test(pwd))                     score++;
+    if (/[^A-Za-z0-9]/.test(pwd))             score++;
+
+    const pct    = (score / 5) * 100;
+    const colors = ['#ff4455','#ff4455','#ffaa00','#ffaa00','#BFFF00'];
+    fill.style.width      = pct + '%';
+    fill.style.background = colors[Math.max(0, score - 1)] || '#ff4455';
+  }
+
+  // ── SIGN OUT ──────────────────────────────────────────────────────────
+  function signOut() {
+    sessionStorage.removeItem(AUTH.SESSION_KEY);
+    document.querySelector('.shell').style.visibility = 'hidden';
+    const wall = document.getElementById('authWall');
+    wall.style.opacity = '0';
+    wall.classList.remove('hidden');
+    wall.style.transition = 'opacity 0.3s';
+    setTimeout(() => { wall.style.opacity = '1'; }, 10);
+    document.getElementById('cardSignIn').style.display = 'block';
+    document.getElementById('cardReset').style.display  = 'none';
+    document.getElementById('signInPwd').value = '';
+    document.getElementById('signInError').classList.remove('show');
+  }
+
+  // ── INIT ──────────────────────────────────────────────────────────────────
+  // loadOverview() is called by auth on success — not here directly
+</script>
+</body>
+</html>
