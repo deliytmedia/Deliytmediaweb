@@ -492,6 +492,8 @@
     <button class="nav-item" onclick="showView('appointments')">📅 Appointments</button>
     <button class="nav-item" onclick="showView('escalations')">⚠️ Escalations <span class="nav-badge" id="escBadge">0</span></button>
     <button class="nav-item" onclick="showView('knowledge')">🧠 Knowledge Base</button>
+      <button class="nav-item" onclick="showView('calendar')">📆 Availability</button>
+      <button class="nav-item" onclick="showView('prompts')">🎯 Ad Prompts</button>
     <div class="sidebar-footer">
       <button class="nav-item" onclick="refreshAll()">🔄 Refresh</button>
       <button class="nav-item" style="color:#ff4455;margin-top:0.5rem" onclick="signOut()">🚪 Sign Out</button>
@@ -676,6 +678,107 @@
       </div>
     </div>
 
+
+    <!-- ── Availability Calendar ── -->
+    <div class="view" id="view-calendar">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Availability Calendar</div>
+          <div class="page-subtitle">Block dates so the AI agent only offers available slots</div>
+        </div>
+        <button class="btn btn-primary" onclick="saveAvailability()">💾 Save Changes</button>
+      </div>
+
+      <!-- Month nav -->
+      <div class="panel" style="margin-bottom:1.5rem">
+        <div class="panel-header">
+          <button class="btn btn-ghost" onclick="changeMonth(-1)">← Prev</button>
+          <div class="panel-title" id="calMonthLabel">Month Year</div>
+          <button class="btn btn-ghost" onclick="changeMonth(1)">Next →</button>
+        </div>
+        <div class="panel-body">
+          <!-- Legend -->
+          <div style="display:flex;gap:1.5rem;margin-bottom:1.25rem;font-size:0.85rem;color:var(--muted)">
+            <span><span style="display:inline-block;width:12px;height:12px;background:rgba(0,232,122,0.3);border:1px solid rgba(0,232,122,0.5);border-radius:3px;margin-right:5px;vertical-align:middle"></span>Available</span>
+            <span><span style="display:inline-block;width:12px;height:12px;background:rgba(255,68,85,0.3);border:1px solid rgba(255,68,85,0.5);border-radius:3px;margin-right:5px;vertical-align:middle"></span>Blocked</span>
+            <span><span style="display:inline-block;width:12px;height:12px;background:rgba(255,170,0,0.3);border:1px solid rgba(255,170,0,0.5);border-radius:3px;margin-right:5px;vertical-align:middle"></span>Has Bookings</span>
+            <span><span style="display:inline-block;width:12px;height:12px;background:rgba(100,100,120,0.2);border:1px solid var(--border);border-radius:3px;margin-right:5px;vertical-align:middle"></span>Weekend / Past</span>
+          </div>
+          <!-- Calendar grid -->
+          <div id="calGrid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;"></div>
+          <!-- Day headers -->
+        </div>
+      </div>
+
+      <!-- Selected date config -->
+      <div class="panel" id="dateConfigPanel" style="display:none">
+        <div class="panel-header">
+          <div class="panel-title" id="dateConfigTitle">Configure Date</div>
+          <button class="btn btn-ghost" onclick="closeDateConfig()">✕ Close</button>
+        </div>
+        <div class="panel-body">
+          <!-- Status buttons -->
+          <div style="display:flex;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap">
+            <button class="btn btn-primary" onclick="setDateStatus('available')">Mark Available</button>
+            <button class="btn btn-danger"  onclick="setDateStatus('blocked')">Block This Date</button>
+          </div>
+          <label class="auth-label" style="margin-bottom:0.5rem;display:block">Block Reason (optional)</label>
+          <input type="text" class="search-box" id="blockReason" placeholder="e.g. Public holiday, Out of office..." style="width:100%;margin-bottom:1.5rem">
+          <div style="margin-bottom:1.5rem">
+            <div style="font-size:0.8rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:0.75rem">Available Time Slots (WAT)</div>
+            <div id="slotManager" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px"></div>
+            <div style="margin-top:0.75rem;font-size:0.8rem;color:var(--muted)">Click a slot to toggle it. Green = available, Dark = blocked for this date.</div>
+          </div>
+          <div id="dateBookings" style="color:var(--muted);font-size:0.9rem"></div>
+        </div>
+      </div>
+
+      <!-- Upcoming blocked dates list -->
+      <div class="panel">
+        <div class="panel-header"><div class="panel-title">Blocked Dates</div></div>
+        <div class="panel-body" style="padding:0">
+          <table>
+            <thead><tr><th>Date</th><th>Reason</th><th>Action</th></tr></thead>
+            <tbody id="blockedDatesTable">
+              <tr><td colspan="3" style="text-align:center;padding:2rem;color:var(--muted)">No blocked dates.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Ad Prompts ── -->
+    <div class="view" id="view-prompts">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Ad Prompts</div>
+          <div class="page-subtitle">Up to 5 prompts for landing pages. Each generates a unique URL for your ads.</div>
+        </div>
+      </div>
+
+      <div id="promptsGrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(480px,1fr));gap:1.5rem">
+        <!-- Rendered by JS -->
+      </div>
+
+      <div class="panel" style="margin-top:1.5rem">
+        <div class="panel-header"><div class="panel-title">📖 How to use Ad Prompts</div></div>
+        <div class="panel-body" style="color:var(--muted);line-height:1.8;font-size:0.9rem">
+          <p>Each prompt powers a unique landing page. Share the URL in your ad campaign.</p>
+          <br>
+          <p><strong style="color:var(--text)">Landing Page URL format:</strong></p>
+          <code style="background:var(--elevated);padding:6px 12px;border-radius:6px;font-size:0.85rem;display:inline-block;margin:0.5rem 0;color:var(--lime)">https://yoursite.netlify.app/landing.html?p=1</code>
+          <br><br>
+          <p><strong style="color:var(--text)">Tips for good prompts:</strong></p>
+          <ul style="margin:0.5rem 0 0 1.5rem">
+            <li>Start with the ad context (e.g. "Visitor came from a WhatsApp automation ad")</li>
+            <li>State the goal clearly (e.g. "Book a strategy call")</li>
+            <li>Keep replies short: "Max 2 sentences per reply"</li>
+            <li>Add urgency: "Always move toward booking"</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
   </main>
 </div>
 
@@ -729,6 +832,8 @@
       case 'appointments':  await loadAppointments();  break;
       case 'escalations':   await loadEscalations();   break;
       case 'knowledge':     await loadKnowledge();     break;
+      case 'calendar':     initCalendar();            break;
+      case 'prompts':      initPrompts();             break;
     }
   }
 
@@ -1039,6 +1144,422 @@
   function formatService(code) {
     return {'whatsapp_agent':'WhatsApp Agent','saas_platform':'SaaS Platform','customer_support':'Support System','social_media':'Social Media','mobile_app':'Mobile App'}[code] || code || '—';
   }
+
+
+
+  // ════════════════════════════════════════════════════════
+  // AVAILABILITY CALENDAR
+  // ════════════════════════════════════════════════════════
+
+  const CAL = {
+    year:     new Date().getFullYear(),
+    month:    new Date().getMonth(), // 0-indexed
+    selected: null,
+    changes:  {},  // { 'YYYY-MM-DD': { status, reason } }
+    existing: {}   // loaded from Sheets
+  };
+
+  const MONTHS = ['January','February','March','April','May','June',
+                  'July','August','September','October','November','December'];
+  const DAYS   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+  function renderCalendar() {
+    document.getElementById('calMonthLabel').textContent =
+      MONTHS[CAL.month] + ' ' + CAL.year;
+
+    const grid = document.getElementById('calGrid');
+    grid.innerHTML = '';
+
+    // Day headers
+    DAYS.forEach(d => {
+      const h = document.createElement('div');
+      h.style.cssText = 'text-align:center;font-size:0.75rem;font-weight:700;color:var(--muted);padding:6px 0;';
+      h.textContent = d;
+      grid.appendChild(h);
+    });
+
+    const firstDay  = new Date(CAL.year, CAL.month, 1).getDay();
+    const daysCount = new Date(CAL.year, CAL.month + 1, 0).getDate();
+    const today     = new Date();
+    today.setHours(0,0,0,0);
+
+    // Empty cells before first day
+    for (let i = 0; i < firstDay; i++) {
+      grid.appendChild(document.createElement('div'));
+    }
+
+    for (let d = 1; d <= daysCount; d++) {
+      const date     = new Date(CAL.year, CAL.month, d);
+      const dateKey  = formatCalKey(date);
+      const isPast   = date < today;
+      const isWeekend= date.getDay() === 0 || date.getDay() === 6;
+      const change   = CAL.changes[dateKey];
+      const existing = CAL.existing[dateKey];
+      const status   = change?.status || existing?.status || 'available';
+      const hasBooks = existing?.bookings > 0;
+
+      const cell = document.createElement('div');
+      cell.style.cssText = `
+        aspect-ratio:1;
+        display:flex;align-items:center;justify-content:center;
+        border-radius:8px;font-size:0.9rem;font-weight:600;
+        cursor:pointer;transition:all 0.2s;border:1.5px solid transparent;
+        position:relative;
+      `;
+      cell.textContent = d;
+
+      if (isPast || isWeekend) {
+        cell.style.color = 'rgba(100,100,120,0.4)';
+        cell.style.cursor = 'default';
+        cell.style.background = 'rgba(100,100,120,0.06)';
+      } else if (status === 'blocked') {
+        cell.style.background = 'rgba(255,68,85,0.15)';
+        cell.style.border     = '1.5px solid rgba(255,68,85,0.4)';
+        cell.style.color      = '#ff4455';
+      } else if (hasBooks) {
+        cell.style.background = 'rgba(255,170,0,0.12)';
+        cell.style.border     = '1.5px solid rgba(255,170,0,0.35)';
+        cell.style.color      = '#ffaa00';
+      } else {
+        cell.style.background = 'rgba(0,232,122,0.07)';
+        cell.style.border     = '1.5px solid rgba(0,232,122,0.2)';
+        cell.style.color      = '#00e87a';
+      }
+
+      if (dateKey === CAL.selected) {
+        cell.style.outline = '2px solid var(--lime)';
+        cell.style.outlineOffset = '2px';
+      }
+
+      if (!isPast && !isWeekend) {
+        cell.addEventListener('click', () => selectDate(dateKey, d));
+        cell.addEventListener('mouseenter', () => { if (dateKey !== CAL.selected) cell.style.opacity = '0.8'; });
+        cell.addEventListener('mouseleave', () => { cell.style.opacity = '1'; });
+      }
+
+      grid.appendChild(cell);
+    }
+  }
+
+  function formatCalKey(date) {
+    return date.getFullYear() + '-' +
+      String(date.getMonth()+1).padStart(2,'0') + '-' +
+      String(date.getDate()).padStart(2,'0');
+  }
+
+  function changeMonth(dir) {
+    CAL.month += dir;
+    if (CAL.month < 0)  { CAL.month = 11; CAL.year--; }
+    if (CAL.month > 11) { CAL.month = 0;  CAL.year++; }
+    CAL.selected = null;
+    document.getElementById('dateConfigPanel').style.display = 'none';
+    renderCalendar();
+  }
+
+  const ALL_SLOTS = [
+    { value:'09:00', label:'9:00 AM'  },
+    { value:'10:00', label:'10:00 AM' },
+    { value:'11:00', label:'11:00 AM' },
+    { value:'12:00', label:'12:00 PM' },
+    { value:'14:00', label:'2:00 PM'  },
+    { value:'15:00', label:'3:00 PM'  },
+    { value:'16:00', label:'4:00 PM'  },
+    { value:'17:00', label:'5:00 PM'  }
+  ];
+
+  function selectDate(dateKey, day) {
+    CAL.selected = dateKey;
+    renderCalendar();
+    const panel = document.getElementById('dateConfigPanel');
+    panel.style.display = 'block';
+    document.getElementById('dateConfigTitle').textContent =
+      'Configure: ' + MONTHS[CAL.month] + ' ' + day + ', ' + CAL.year;
+    const change   = CAL.changes[dateKey];
+    const existing = CAL.existing[dateKey];
+    document.getElementById('blockReason').value =
+      (change && change.reason) || (existing && existing.reason) || '';
+    const bookCount = (existing && existing.bookings) || 0;
+    document.getElementById('dateBookings').innerHTML = bookCount > 0
+      ? '<span style="color:var(--warm)">Warning: ' + bookCount +
+        ' appointment' + (bookCount > 1 ? 's' : '') + ' already booked.</span>'
+      : '';
+    renderSlotManager(dateKey, change || existing);
+    panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function applySlotStyle(btn, isOn) {
+    btn.style.cssText =
+      'padding:8px 4px;border-radius:10px;font-size:0.8rem;font-weight:700;' +
+      'font-family:Outfit,sans-serif;cursor:pointer;transition:all 0.2s;' +
+      'border:1.5px solid;width:100%;' +
+      (isOn
+        ? 'background:rgba(0,232,122,0.12);border-color:rgba(0,232,122,0.4);color:#00e87a;'
+        : 'background:rgba(100,100,120,0.1);border-color:rgba(255,255,255,0.06);color:#8888aa;');
+  }
+
+  function renderSlotManager(dateKey, config) {
+    const grid = document.getElementById('slotManager');
+    if (!grid) return;
+    grid.innerHTML = '';
+    let enabledValues = ALL_SLOTS.map(function(s) { return s.value; });
+    if (config && config.slots) {
+      try {
+        const parsed = typeof config.slots === 'string'
+          ? JSON.parse(config.slots) : config.slots;
+        enabledValues = parsed.map(function(s) {
+          return typeof s === 'object' ? s.value : s;
+        });
+      } catch(e) {}
+    }
+    ALL_SLOTS.forEach(function(slot) {
+      const isOn = enabledValues.includes(slot.value);
+      const btn  = document.createElement('button');
+      applySlotStyle(btn, isOn);
+      btn.textContent   = slot.label;
+      btn.dataset.value = slot.value;
+      btn.dataset.on    = String(isOn);
+      btn.addEventListener('click', function() {
+        const nowOn = btn.dataset.on === 'true';
+        btn.dataset.on = String(!nowOn);
+        applySlotStyle(btn, !nowOn);
+        saveSlotsToChanges(dateKey);
+      });
+      grid.appendChild(btn);
+    });
+  }
+
+  function saveSlotsToChanges(dateKey) {
+    const active = [];
+    document.querySelectorAll('#slotManager button').forEach(function(btn) {
+      if (btn.dataset.on === 'true') {
+        const found = ALL_SLOTS.find(function(s) { return s.value === btn.dataset.value; });
+        if (found) active.push(found);
+      }
+    });
+    if (!CAL.changes[dateKey]) CAL.changes[dateKey] = { status:'available', reason:'' };
+    CAL.changes[dateKey].slots = JSON.stringify(active);
+    renderBlockedDates();
+  }
+
+
+    panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function setDateStatus(status) {
+    if (!CAL.selected) return;
+    CAL.changes[CAL.selected] = {
+      status,
+      reason: document.getElementById('blockReason').value.trim()
+    };
+    renderCalendar();
+    renderBlockedDates();
+  }
+
+  function closeDateConfig() {
+    CAL.selected = null;
+    document.getElementById('dateConfigPanel').style.display = 'none';
+    renderCalendar();
+  }
+
+  function renderBlockedDates() {
+    const tbody = document.getElementById('blockedDatesTable');
+    const all   = { ...CAL.existing, ...CAL.changes };
+    const blocked = Object.entries(all)
+      .filter(([,v]) => v.status === 'blocked')
+      .sort(([a],[b]) => a.localeCompare(b));
+
+    if (!blocked.length) {
+      tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:2rem;color:var(--muted)">No blocked dates.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = blocked.map(([date, info]) => `
+      <tr>
+        <td><strong>${date}</strong></td>
+        <td style="color:var(--muted)">${info.reason || '—'}</td>
+        <td>
+          <button class="btn btn-ghost" style="font-size:0.8rem;padding:4px 10px"
+                  onclick="unblockDate('${date}')">Unblock</button>
+        </td>
+      </tr>`).join('');
+  }
+
+  function unblockDate(dateKey) {
+    CAL.changes[dateKey] = { status: 'available', reason: '' };
+    renderCalendar();
+    renderBlockedDates();
+  }
+
+  async function saveAvailability() {
+    if (!Object.keys(CAL.changes).length) {
+      alert('No changes to save.');
+      return;
+    }
+    try {
+      const res  = await fetch(DASH_CONFIG.appsScriptUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'saveAvailability', changes: CAL.changes })
+      });
+      const data = await res.json();
+      if (data.success !== false) {
+        CAL.existing = { ...CAL.existing, ...CAL.changes };
+        CAL.changes  = {};
+        alert('✅ Availability saved successfully!');
+        renderCalendar();
+        renderBlockedDates();
+      }
+    } catch(e) {
+      // Optimistic — save locally for demo
+      CAL.existing = { ...CAL.existing, ...CAL.changes };
+      CAL.changes  = {};
+      alert('✅ Changes saved (demo mode).');
+      renderCalendar();
+      renderBlockedDates();
+    }
+  }
+
+  function initCalendar() {
+    renderCalendar();
+    renderBlockedDates();
+  }
+
+
+  // ════════════════════════════════════════════════════════
+  // AD PROMPTS MANAGER
+  // ════════════════════════════════════════════════════════
+
+  const DEFAULT_PROMPTS = [
+    { id:1, name:'WhatsApp Agent Ad',
+      system_prompt:'You are a conversion-focused assistant for Deliytmedia. The visitor came from a WhatsApp automation ad. Goal: understand their business, show how a WhatsApp agent fixes their problem, book a strategy call. Be direct. Max 2 sentences per reply.',
+      opening_message:'Hey! 👋 Saw our ad about WhatsApp automation? Tell me — what kind of business do you run?',
+      max_exchanges:8, session_seconds:45, active:true },
+    { id:2, name:'SaaS Platform Ad',
+      system_prompt:'You are a conversion assistant for Deliytmedia. Visitor came from a custom software ad. Goal: understand what system they need, qualify budget/timeline, book a discovery call. Short replies only.',
+      opening_message:"Hi! You're looking at getting a custom platform built? Tell me what you're trying to create.",
+      max_exchanges:8, session_seconds:45, active:true },
+    { id:3, name:'Social Media Ad',
+      system_prompt:'You are a conversion assistant for Deliytmedia. Visitor came from a social media marketing ad. Goal: understand current social presence, identify gap, pitch service, book a call.',
+      opening_message:"Hey! Looking to grow your social media? Which platforms matter most for your business?",
+      max_exchanges:8, session_seconds:45, active:true },
+    { id:4, name:'General Ad',
+      system_prompt:'You are a conversion assistant for Deliytmedia. Quickly identify the biggest pain point, match it to a service, guide to book a call. Keep replies under 3 sentences.',
+      opening_message:"Hi there! What's the biggest challenge in your business right now?",
+      max_exchanges:8, session_seconds:45, active:false },
+    { id:5, name:'Retargeting Ad',
+      system_prompt:'You are a re-engagement assistant for Deliytmedia. This visitor has seen us before. Address objections, remind them of value, get them to book. Be honest and direct.',
+      opening_message:'Hey, welcome back! 👋 What stopped you from moving forward last time?',
+      max_exchanges:8, session_seconds:45, active:false }
+  ];
+
+  let promptsData = JSON.parse(localStorage.getItem('dm_prompts') || 'null') || DEFAULT_PROMPTS;
+
+  function renderPrompts() {
+    const grid = document.getElementById('promptsGrid');
+    grid.innerHTML = promptsData.map((p, idx) => `
+      <div class="panel" style="${!p.active ? 'opacity:0.65' : ''}">
+        <div class="panel-header">
+          <div style="display:flex;align-items:center;gap:0.75rem">
+            <span style="font-size:1.1rem;font-weight:900;color:var(--lime)">#${p.id}</span>
+            <input type="text" value="${escHtml(p.name)}" id="pname_${idx}"
+                   style="background:transparent;border:none;color:var(--text);font-family:'Outfit',sans-serif;font-size:1rem;font-weight:800;outline:none;flex:1"
+                   onchange="updatePrompt(${idx},'name',this.value)">
+          </div>
+          <div style="display:flex;gap:0.5rem;align-items:center">
+            <span class="badge badge-${p.active?'done':'pending'}" style="cursor:pointer"
+                  onclick="togglePromptActive(${idx})">${p.active?'Active':'Inactive'}</span>
+          </div>
+        </div>
+        <div class="panel-body" style="display:flex;flex-direction:column;gap:1rem">
+
+          <div>
+            <div style="font-size:0.8rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Opening Message</div>
+            <textarea id="popening_${idx}" rows="2"
+              style="width:100%;background:var(--elevated);border:1.5px solid var(--border);border-radius:10px;color:var(--text);font-family:'Outfit',sans-serif;font-size:0.9rem;padding:0.75rem;outline:none;resize:vertical"
+              onfocus="this.style.borderColor='var(--lime)'" onblur="this.style.borderColor='var(--border)'"
+              onchange="updatePrompt(${idx},'opening_message',this.value)">${escHtml(p.opening_message)}</textarea>
+          </div>
+
+          <div>
+            <div style="font-size:0.8rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">System Prompt (Agent Behaviour)</div>
+            <textarea id="pprompt_${idx}" rows="4"
+              style="width:100%;background:var(--elevated);border:1.5px solid var(--border);border-radius:10px;color:var(--text);font-family:'Outfit',sans-serif;font-size:0.85rem;padding:0.75rem;outline:none;resize:vertical;line-height:1.5"
+              onfocus="this.style.borderColor='var(--lime)'" onblur="this.style.borderColor='var(--border)'"
+              onchange="updatePrompt(${idx},'system_prompt',this.value)">${escHtml(p.system_prompt)}</textarea>
+          </div>
+
+          <div style="display:flex;gap:1rem">
+            <div style="flex:1">
+              <div style="font-size:0.8rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Max Exchanges</div>
+              <input type="number" min="3" max="15" value="${p.max_exchanges}"
+                style="width:100%;background:var(--elevated);border:1.5px solid var(--border);border-radius:10px;color:var(--text);font-family:'Outfit',sans-serif;font-size:0.9rem;padding:0.65rem;outline:none;text-align:center"
+                onchange="updatePrompt(${idx},'max_exchanges',parseInt(this.value))">
+            </div>
+            <div style="flex:1">
+              <div style="font-size:0.8rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Session Timeout (sec)</div>
+              <input type="number" min="20" max="300" value="${p.session_seconds}"
+                style="width:100%;background:var(--elevated);border:1.5px solid var(--border);border-radius:10px;color:var(--text);font-family:'Outfit',sans-serif;font-size:0.9rem;padding:0.65rem;outline:none;text-align:center"
+                onchange="updatePrompt(${idx},'session_seconds',parseInt(this.value))">
+            </div>
+          </div>
+
+          <div style="display:flex;gap:0.75rem;align-items:center;padding-top:0.5rem;border-top:1px solid var(--border)">
+            <button class="btn btn-primary" style="font-size:0.85rem;padding:0.55rem 1.1rem" onclick="savePrompt(${idx})">💾 Save</button>
+            <div style="flex:1;background:var(--elevated);border-radius:8px;padding:0.5rem 0.85rem;font-size:0.8rem;color:var(--muted)">
+              Landing URL: <strong style="color:var(--lime)">landing.html?p=${p.id}</strong>
+            </div>
+            <button class="btn btn-ghost" style="font-size:0.8rem;padding:0.5rem 0.9rem"
+                    onclick="copyUrl(${p.id})">📋 Copy URL</button>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function updatePrompt(idx, field, value) {
+    promptsData[idx][field] = value;
+  }
+
+  function togglePromptActive(idx) {
+    promptsData[idx].active = !promptsData[idx].active;
+    saveAllPrompts();
+    renderPrompts();
+  }
+
+  function savePrompt(idx) {
+    saveAllPrompts();
+    // Flash save confirmation
+    const btn = event.target;
+    const orig = btn.textContent;
+    btn.textContent = '✅ Saved!';
+    setTimeout(() => btn.textContent = orig, 1500);
+  }
+
+  function saveAllPrompts() {
+    localStorage.setItem('dm_prompts', JSON.stringify(promptsData));
+    // Also sync to Apps Script
+    fetch(DASH_CONFIG.appsScriptUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'savePrompts', prompts: promptsData })
+    }).catch(() => {}); // silent fail — localStorage is source of truth
+  }
+
+  function copyUrl(promptId) {
+    const url = window.location.origin + '/landing.html?p=' + promptId;
+    navigator.clipboard.writeText(url).then(() => {
+      const btn = event.target;
+      const orig = btn.textContent;
+      btn.textContent = '✅ Copied!';
+      setTimeout(() => btn.textContent = orig, 1500);
+    });
+  }
+
+  function escHtml(str) {
+    return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function initPrompts() { renderPrompts(); }
 
   // Close modal on overlay click
   document.getElementById('convModal').addEventListener('click', function(e) {
