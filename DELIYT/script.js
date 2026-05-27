@@ -1,139 +1,95 @@
 // ============================================================================
-// DELIYTMEDIA FRONTEND CHAT — Connects to Apps Script Agent Backend
+// DELIYTMEDIA FRONTEND CHAT — v3
+// Connects to Apps Script Agent Backend
+// Supports: qualification flow, date picker, slot picker
 // ============================================================================
 
 const CHAT_CONFIG = {
-  webhookUrl:     'https://script.google.com/macros/s/AKfycbzDLDQjGZhKK5p2dj6i6r3GsqnjxMqtnjO6X8PzSoJEJ4ROBJUIdpzT4oWpbapZzHW9/exec',
+  webhookUrl:     'https://script.google.com/macros/s/AKfycbzDLDQjGZhKK5p2dj6i6r3GsqnjxMqtnjO6X8PzSoJEJ4ROBJUIdpzT4oWpbapZzHW9',
   conversationId: null,
   isOpen:         false,
   isTyping:       false
 };
 
-// ── Generate conversation ID ──────────────────────────────────────────────────
 function initSession() {
   if (!CHAT_CONFIG.conversationId) {
     CHAT_CONFIG.conversationId =
-      'CONV_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9).toUpperCase();
+      'CONV_' + Date.now() + '_' +
+      Math.random().toString(36).substr(2, 9).toUpperCase();
   }
 }
 
-// ── Open chat — modal + blur ──────────────────────────────────────────────────
+// ── Open / Close / Toggle ─────────────────────────────────────────────────────
 function openChat() {
   if (CHAT_CONFIG.isOpen) return;
   CHAT_CONFIG.isOpen = true;
   initSession();
-
-  const overlay = document.getElementById('chatOverlay');
-  const bubble  = document.getElementById('chatBubbleBtn');
-
-  // Show overlay
-  overlay.classList.add('active');
-
-  // Prevent body scroll
+  document.getElementById('chatOverlay').classList.add('active');
   document.body.style.overflow = 'hidden';
-
-  // Switch bubble icon → X
+  var bubble = document.getElementById('chatBubbleBtn');
   if (bubble) {
     bubble.classList.add('is-open');
-    const iconChat  = bubble.querySelector('.bubble-icon-chat');
-    const iconClose = bubble.querySelector('.bubble-icon-close');
-    if (iconChat)  iconChat.style.display  = 'none';
-    if (iconClose) iconClose.style.display = 'block';
+    var ic = bubble.querySelector('.bubble-icon-chat');
+    var ix = bubble.querySelector('.bubble-icon-close');
+    if (ic) ic.style.display = 'none';
+    if (ix) ix.style.display = 'block';
   }
-
-  // Focus input after animation
-  setTimeout(() => {
-    const input = document.getElementById('chatInput');
-    if (input) input.focus();
+  setTimeout(function() {
+    var inp = document.getElementById('chatInput');
+    if (inp) inp.focus();
   }, 350);
 }
 
-// ── Close chat ────────────────────────────────────────────────────────────────
 function closeChat() {
   if (!CHAT_CONFIG.isOpen) return;
   CHAT_CONFIG.isOpen = false;
-
-  const overlay = document.getElementById('chatOverlay');
-  const bubble  = document.getElementById('chatBubbleBtn');
-
-  overlay.classList.remove('active');
+  document.getElementById('chatOverlay').classList.remove('active');
   document.body.style.overflow = '';
-
-  // Switch bubble icon back
+  var bubble = document.getElementById('chatBubbleBtn');
   if (bubble) {
     bubble.classList.remove('is-open');
-    const iconChat  = bubble.querySelector('.bubble-icon-chat');
-    const iconClose = bubble.querySelector('.bubble-icon-close');
-    if (iconChat)  iconChat.style.display  = 'block';
-    if (iconClose) iconClose.style.display = 'none';
+    var ic = bubble.querySelector('.bubble-icon-chat');
+    var ix = bubble.querySelector('.bubble-icon-close');
+    if (ic) ic.style.display = 'block';
+    if (ix) ix.style.display = 'none';
   }
 }
 
-// ── Toggle (bubble button) ────────────────────────────────────────────────────
-function toggleChat() {
-  CHAT_CONFIG.isOpen ? closeChat() : openChat();
-}
+function toggleChat() { CHAT_CONFIG.isOpen ? closeChat() : openChat(); }
 
-// ── Click on overlay backdrop closes modal ────────────────────────────────────
 function handleOverlayClick(event) {
-  // Only close if clicking the dark backdrop, not the modal itself
-  if (event.target === document.getElementById('chatOverlay')) {
-    closeChat();
-  }
+  if (event.target === document.getElementById('chatOverlay')) closeChat();
 }
 
 // ── Send message ──────────────────────────────────────────────────────────────
 async function sendMessage() {
-  const input   = document.getElementById('chatInput');
-  const message = input.value.trim();
+  var input   = document.getElementById('chatInput');
+  var message = input.value.trim();
   if (!message || CHAT_CONFIG.isTyping) return;
 
   input.value = '';
   input.disabled = true;
   document.getElementById('chatSend').disabled = true;
 
-  // Show user message
   appendMessage(message, 'user');
-
-  // Show typing indicator
   showTyping();
   CHAT_CONFIG.isTyping = true;
 
   try {
-    // Apps Script doesn't support CORS preflight from localhost.
-    // We use a URL-encoded GET-style POST to avoid the preflight check.
-    // This works on both localhost and Netlify.
-    const params = new URLSearchParams({
+    var params = new URLSearchParams({
       conversation_id: CHAT_CONFIG.conversationId,
       message:         message,
       timestamp:       new Date().toISOString()
     });
-
-    const response = await fetch(CHAT_CONFIG.webhookUrl, {
-      method:  'POST',
-      // No Content-Type header = no preflight = no CORS block
-      body: params
-    });
-
-    const data = await response.json();
-
+    var response = await fetch(CHAT_CONFIG.webhookUrl, { method: 'POST', body: params });
+    var data     = await response.json();
     hideTyping();
     CHAT_CONFIG.isTyping = false;
-
-    if (data.response) {
-      appendMessage(data.response, 'bot');
-    } else {
-      appendMessage("Something went wrong. Please email hello@deliytmedia.com directly.", 'bot');
-    }
-
+    handleAgentResponse(data);
   } catch (err) {
     hideTyping();
     CHAT_CONFIG.isTyping = false;
-
-    // Demo fallback when webhook not yet connected
-    const fallback = getFallbackResponse(message);
-    appendMessage(fallback, 'bot');
-
+    appendMessage(getFallbackResponse(message), 'bot');
   } finally {
     input.disabled = false;
     document.getElementById('chatSend').disabled = false;
@@ -141,187 +97,241 @@ async function sendMessage() {
   }
 }
 
-// ── Append message to chat ────────────────────────────────────────────────────
+// ── Central response handler ──────────────────────────────────────────────────
+function handleAgentResponse(data) {
+  if (!data || !data.response) {
+    appendMessage("Something went wrong. Please email hello@deliytmedia.com directly.", 'bot');
+    return;
+  }
+  if (data.response === '__DATE_PICKER__' && data.availability) {
+    appendMessage("Almost there! Choose a date for your strategy call:", 'bot');
+    appendDatePicker(data.availability);
+  } else if (data.response === '__SLOT_PICKER__' && data.slots) {
+    appendMessage('Now pick a time on ' + (data.date_label || 'your chosen date') + ' (WAT):', 'bot');
+    appendSlotPicker(data.slots, data.date_label);
+  } else {
+    appendMessage(data.response, 'bot');
+  }
+}
+
+// ── DATE PICKER ───────────────────────────────────────────────────────────────
+function appendDatePicker(availDates) {
+  var container = document.getElementById('chatMessages');
+  var wrapper   = document.createElement('div');
+  wrapper.className = 'message bot-message picker-wrapper';
+
+  var grid = document.createElement('div');
+  grid.className = 'picker-grid';
+
+  availDates.forEach(function(d) {
+    var btn = document.createElement('button');
+    btn.className = 'picker-btn';
+    btn.innerHTML =
+      '<span class="picker-main">' + d.label + '</span>' +
+      '<span class="picker-sub">' + d.slots.length + ' slot' +
+      (d.slots.length !== 1 ? 's' : '') + ' open</span>';
+    btn.addEventListener('click', function() { selectDate(d.date, d.label); });
+    grid.appendChild(btn);
+  });
+
+  wrapper.appendChild(grid);
+  container.appendChild(wrapper);
+  container.scrollTop = container.scrollHeight;
+}
+
+function selectDate(dateValue, dateLabel) {
+  removePickers();
+  appendMessage(dateLabel, 'user');
+  sendPickerValue(dateValue);
+}
+
+// ── SLOT PICKER ───────────────────────────────────────────────────────────────
+function appendSlotPicker(slots, dateLabel) {
+  var container = document.getElementById('chatMessages');
+  var wrapper   = document.createElement('div');
+  wrapper.className = 'message bot-message picker-wrapper';
+
+  var grid = document.createElement('div');
+  grid.className = 'picker-grid slot-grid';
+
+  slots.forEach(function(s) {
+    var btn = document.createElement('button');
+    btn.className   = 'picker-btn slot-btn';
+    btn.textContent = s.label;
+    btn.addEventListener('click', function() { selectSlot(s.value, s.label); });
+    grid.appendChild(btn);
+  });
+
+  wrapper.appendChild(grid);
+  container.appendChild(wrapper);
+  container.scrollTop = container.scrollHeight;
+}
+
+function selectSlot(slotValue, slotLabel) {
+  removePickers();
+  appendMessage(slotLabel, 'user');
+  sendPickerValue(slotValue);
+}
+
+function removePickers() {
+  document.querySelectorAll('.picker-wrapper').forEach(function(el) { el.remove(); });
+}
+
+// ── Send picker value to backend ──────────────────────────────────────────────
+async function sendPickerValue(value) {
+  showTyping();
+  CHAT_CONFIG.isTyping = true;
+  try {
+    var params = new URLSearchParams({
+      conversation_id: CHAT_CONFIG.conversationId,
+      message:         value,
+      timestamp:       new Date().toISOString()
+    });
+    var response = await fetch(CHAT_CONFIG.webhookUrl, { method: 'POST', body: params });
+    var data     = await response.json();
+    hideTyping();
+    CHAT_CONFIG.isTyping = false;
+    handleAgentResponse(data);
+  } catch (err) {
+    hideTyping();
+    CHAT_CONFIG.isTyping = false;
+    appendMessage("Something went wrong. Please try again.", 'bot');
+  }
+}
+
+// ── Append message ────────────────────────────────────────────────────────────
 function appendMessage(text, sender) {
-  const container = document.getElementById('chatMessages');
-
-  const wrapper = document.createElement('div');
-  wrapper.className = `message ${sender}-message`;
-
-  const bubble = document.createElement('div');
+  var container = document.getElementById('chatMessages');
+  var wrapper   = document.createElement('div');
+  wrapper.className = 'message ' + sender + '-message';
+  var bubble = document.createElement('div');
   bubble.className = 'message-content';
   bubble.innerHTML = formatText(text);
-
   wrapper.appendChild(bubble);
   container.appendChild(wrapper);
   container.scrollTop = container.scrollHeight;
 }
 
-// ── Format message text (bold, line breaks, bullets) ─────────────────────────
+// ── Format text (bold, bullets, code, linebreaks) ─────────────────────────────
 function formatText(text) {
-  // Bold: **text**
   text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-
-  // Code: `text`
   text = text.replace(/`(.*?)`/g, '<code>$1</code>');
-
-  // Bullet lines starting with -
-  const lines = text.split('\n');
-  const formatted = [];
-  let inList = false;
-
-  lines.forEach(line => {
-    const trimmed = line.trim();
-    if (trimmed.startsWith('- ') || trimmed.startsWith('• ')) {
-      if (!inList) { formatted.push('<ul>'); inList = true; }
-      formatted.push(`<li>${trimmed.slice(2)}</li>`);
+  var lines  = text.split('\n');
+  var out    = [];
+  var inList = false;
+  lines.forEach(function(line) {
+    var t = line.trim();
+    if (t.startsWith('- ') || t.startsWith('* ')) {
+      if (!inList) { out.push('<ul>'); inList = true; }
+      out.push('<li>' + t.slice(2) + '</li>');
     } else {
-      if (inList) { formatted.push('</ul>'); inList = false; }
-      if (trimmed === '') {
-        formatted.push('<br>');
-      } else {
-        formatted.push(`<p>${trimmed}</p>`);
-      }
+      if (inList) { out.push('</ul>'); inList = false; }
+      out.push(t === '' ? '<br>' : '<p>' + t + '</p>');
     }
   });
-
-  if (inList) formatted.push('</ul>');
-  return formatted.join('');
+  if (inList) out.push('</ul>');
+  return out.join('');
 }
 
 // ── Typing indicator ──────────────────────────────────────────────────────────
 function showTyping() {
-  const container = document.getElementById('chatMessages');
-
-  const wrapper = document.createElement('div');
+  var container = document.getElementById('chatMessages');
+  var wrapper   = document.createElement('div');
   wrapper.className = 'message bot-message';
-  wrapper.id = 'typingIndicator';
-
-  wrapper.innerHTML = `
-    <div class="message-content typing-bubble">
-      <span class="dot"></span>
-      <span class="dot"></span>
-      <span class="dot"></span>
-    </div>`;
-
+  wrapper.id        = 'typingIndicator';
+  wrapper.innerHTML =
+    '<div class="message-content typing-bubble">' +
+    '<span class="dot"></span><span class="dot"></span><span class="dot"></span>' +
+    '</div>';
   container.appendChild(wrapper);
   container.scrollTop = container.scrollHeight;
 }
 
 function hideTyping() {
-  const el = document.getElementById('typingIndicator');
+  var el = document.getElementById('typingIndicator');
   if (el) el.remove();
 }
 
-// ── Handle Enter key ──────────────────────────────────────────────────────────
+// ── Enter key ─────────────────────────────────────────────────────────────────
 function handleChatKeyPress(e) {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    sendMessage();
-  }
-}
-
-// ── Demo fallback responses (when backend not yet connected) ──────────────────
-function getFallbackResponse(message) {
-  const lower = message.toLowerCase();
-
-  if (['hi','hey','hello','good morning','good afternoon'].some(w => lower.startsWith(w))) {
-    return "Hey! 👋 I'm the Deliytmedia assistant. I can help you understand our services, get pricing, or book a strategy call.\n\nWhat brings you here today?";
-  }
-  if (lower.includes('price') || lower.includes('cost') || lower.includes('how much')) {
-    return "Great question. Pricing depends on what you need:\n\n- **WhatsApp Sales Agent:** From ₦200,000\n- **Custom SaaS Platform:** From ₦500,000\n- **Social Media Marketing:** From ₦50,000/month\n\nWhat type of solution are you looking for?";
-  }
-  if (lower.includes('book') || lower.includes('call') || lower.includes('schedule')) {
-    return "Perfect. A strategy call is the best next step.\n\nWhat's your name?";
-  }
-  if (lower.includes('whatsapp')) {
-    return "Our WhatsApp Sales Agents handle customer inquiries 24/7 — answering questions, sharing pricing, qualifying leads, and booking appointments while your team sleeps.\n\nWhat kind of business do you run?";
-  }
-  if (lower.includes('social media') || lower.includes('content') || lower.includes('marketing')) {
-    return "We handle full social media management — content creation, scheduling, strategy, and analytics reporting.\n\nWhich platforms matter most for your business?";
-  }
-  return "That's helpful context! To give you the most accurate information, let me connect you with our team.\n\nWhat's the best email to reach you?";
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
 }
 
 // ── Smooth scroll ─────────────────────────────────────────────────────────────
 function scrollToSection(id) {
-  const el = document.getElementById(id);
+  var el = document.getElementById(id);
   if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-// ── Init on load ──────────────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
+// ── Fallback responses (backend not yet connected) ────────────────────────────
+function getFallbackResponse(message) {
+  var l = message.toLowerCase();
+  if (['hi','hey','hello','good morning'].some(function(w) { return l.startsWith(w); }))
+    return "Hey! I'm your Deliytmedia assistant. What kind of business do you run?";
+  if (l.includes('price') || l.includes('cost') || l.includes('how much'))
+    return "Pricing depends on what you need. WhatsApp agents from N200k, SaaS platforms from N500k. What are you building?";
+  if (l.includes('book') || l.includes('call') || l.includes('schedule'))
+    return "I'd love to get you on a strategy call! First, what kind of business do you run?";
+  if (l.includes('whatsapp'))
+    return "Our WhatsApp agents handle inquiries 24/7. What kind of business is it for?";
+  return "Tell me about your business and what you're trying to solve.";
+}
+
+// ── Init on page load ─────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
   initSession();
 
-  // Smooth nav links
-  document.querySelectorAll('a[href^="#"]').forEach(a => {
-    a.addEventListener('click', e => {
+  document.querySelectorAll('a[href^="#"]').forEach(function(a) {
+    a.addEventListener('click', function(e) {
       e.preventDefault();
       scrollToSection(a.getAttribute('href').slice(1));
     });
   });
 
-  // Close chat on Escape key
-  document.addEventListener('keydown', e => {
+  document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape' && CHAT_CONFIG.isOpen) closeChat();
   });
 
-  // Scroll-triggered animations
-  const observer = new IntersectionObserver(entries => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        entry.target.classList.add('visible');
-      }
+  // Scroll animations
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) entry.target.classList.add('visible');
     });
   }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
 
-  document.querySelectorAll('.service-card, .step-card, .faq-item, .problem-card, .check-item').forEach(el => {
+  document.querySelectorAll(
+    '.service-card,.step-card,.faq-item,.problem-card,.check-item'
+  ).forEach(function(el) {
     el.classList.add('animate-on-scroll');
     observer.observe(el);
   });
 });
 
-// Add CSS for animations dynamically
-const animStyle = document.createElement('style');
-animStyle.textContent = `
-  .animate-on-scroll {
-    opacity: 0;
-    transform: translateY(24px);
-    transition: opacity 0.6s ease, transform 0.6s ease;
-  }
-  .animate-on-scroll.visible {
-    opacity: 1;
-    transform: translateY(0);
-  }
-  .typing-bubble {
-    display: flex;
-    gap: 6px;
-    align-items: center;
-    padding: 14px 18px !important;
-  }
-  .dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: #BFFF00;
-    animation: dotBounce 1.4s infinite;
-  }
-  .dot:nth-child(2) { animation-delay: 0.2s; }
-  .dot:nth-child(3) { animation-delay: 0.4s; }
-  @keyframes dotBounce {
-    0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
-    30% { transform: translateY(-8px); opacity: 1; }
-  }
-  .message-content code {
-    background: rgba(191,255,0,0.1);
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-family: monospace;
-    font-size: 0.9em;
-  }
-  .message-content p { margin-bottom: 6px; }
-  .message-content ul { margin: 8px 0 8px 20px; }
-  .message-content li { margin-bottom: 4px; }
-  .message-content strong { color: #BFFF00; }
-`;
-document.head.appendChild(animStyle);
+// ── Injected styles for pickers + animations ──────────────────────────────────
+(function() {
+  var s = document.createElement('style');
+  s.textContent =
+    '.animate-on-scroll{opacity:0;transform:translateY(24px);transition:opacity .6s ease,transform .6s ease}' +
+    '.animate-on-scroll.visible{opacity:1;transform:translateY(0)}' +
+    '.typing-bubble{display:flex !important;gap:6px;align-items:center;padding:14px 18px !important}' +
+    '.dot{width:8px;height:8px;border-radius:50%;background:#BFFF00;animation:dotB 1.4s infinite;display:inline-block}' +
+    '.dot:nth-child(2){animation-delay:.2s}.dot:nth-child(3){animation-delay:.4s}' +
+    '@keyframes dotB{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-8px);opacity:1}}' +
+    '.message-content code{background:rgba(191,255,0,.1);padding:2px 6px;border-radius:4px;font-size:.88em}' +
+    '.message-content p{margin-bottom:6px}.message-content p:last-child{margin-bottom:0}' +
+    '.message-content ul{margin:6px 0 6px 18px}.message-content li{margin-bottom:4px}' +
+    '.message-content strong{color:#BFFF00}' +
+    '.picker-wrapper{max-width:100% !important;width:100%}' +
+    '.picker-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:4px 0}' +
+    '.slot-grid{grid-template-columns:repeat(3,1fr)}' +
+    '.picker-btn{background:#1c1c2e;border:1.5px solid rgba(191,255,0,.2);border-radius:12px;' +
+    'padding:10px 12px;cursor:pointer;transition:all .2s;text-align:center;' +
+    'color:#fff;font-family:Outfit,sans-serif;font-size:.88rem;' +
+    'display:flex;flex-direction:column;align-items:center;gap:3px;width:100%}' +
+    '.picker-btn:hover{background:rgba(191,255,0,.1);border-color:#BFFF00;' +
+    'transform:translateY(-2px);box-shadow:0 4px 14px rgba(191,255,0,.2)}' +
+    '.picker-main{font-weight:700;font-size:.9rem;color:#fff}' +
+    '.picker-sub{font-size:.75rem;color:#8888aa}' +
+    '.slot-btn{flex-direction:row;justify-content:center;font-weight:600}';
+  document.head.appendChild(s);
+})();
