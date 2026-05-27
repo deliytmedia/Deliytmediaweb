@@ -1,22 +1,67 @@
 // ============================================================================
-// DELIYTMEDIA FRONTEND CHAT — v3
-// Connects to Apps Script Agent Backend
-// Supports: qualification flow, date picker, slot picker
+// DELIYTMEDIA FRONTEND CHAT — v5 (CORS-FIXED for Google Apps Script)
+//
+// ROOT CAUSE OF "Something went wrong" ERROR:
+// Google Apps Script does NOT handle CORS preflight (OPTIONS) requests.
+// Sending Content-Type: application/json triggers a preflight → blocked.
+//
+// FIX: Send as URLSearchParams (application/x-www-form-urlencoded).
+// This is a "simple request" — NO preflight, no CORS block.
+// The Apps Script backend reads it via e.parameter.field_name.
 // ============================================================================
 
 const CHAT_CONFIG = {
-  webhookUrl:     'https://script.google.com/macros/s/AKfycbzDLDQjGZhKK5p2dj6i6r3GsqnjxMqtnjO6X8PzSoJEJ4ROBJUIdpzT4oWpbapZzHW9',
+  // ⚠️  PASTE YOUR APPS SCRIPT WEB APP URL BELOW ↓
+  webhookUrl: 'https://script.google.com/macros/s/AKfycbw7G9fW3MYPaOE4HxbO2QwjsBAicKbzKPfq2IHoMkGdPP3raQuJwrrXMYvNQUckOQX0/exec',
+
   conversationId: null,
   isOpen:         false,
-  isTyping:       false
+  isTyping:       false,
+  greetingShown:  false
 };
 
+// ── Session: persist within tab, fresh on page reload ────────────────────────
 function initSession() {
   if (!CHAT_CONFIG.conversationId) {
-    CHAT_CONFIG.conversationId =
-      'CONV_' + Date.now() + '_' +
-      Math.random().toString(36).substr(2, 9).toUpperCase();
+    var stored = sessionStorage.getItem('deliy_conv_id');
+    if (stored) {
+      CHAT_CONFIG.conversationId = stored;
+      CHAT_CONFIG.greetingShown  = true;
+    } else {
+      CHAT_CONFIG.conversationId =
+        'CONV_' + Date.now() + '_' +
+        Math.random().toString(36).substr(2, 9).toUpperCase();
+      sessionStorage.setItem('deliy_conv_id', CHAT_CONFIG.conversationId);
+    }
   }
+}
+
+function isBackendConnected() {
+  return CHAT_CONFIG.webhookUrl &&
+         CHAT_CONFIG.webhookUrl !== 'YOUR_APPS_SCRIPT_WEB_APP_URL_HERE' &&
+         CHAT_CONFIG.webhookUrl.startsWith('https://');
+}
+
+// ── THE FIX: Always send as URLSearchParams (no preflight) ───────────────────
+// Apps Script backend reads: e.parameter.conversation_id, e.parameter.message etc.
+function buildPayload(message, extra) {
+  var params = {
+    conversation_id: CHAT_CONFIG.conversationId,
+    message:         message,
+    timestamp:       new Date().toISOString()
+  };
+  if (extra) Object.assign(params, extra);
+  return new URLSearchParams(params);
+}
+
+async function postToBackend(message, extra) {
+  var response = await fetch(CHAT_CONFIG.webhookUrl, {
+    method:  'POST',
+    // NO Content-Type header → browser defaults to application/x-www-form-urlencoded
+    // This avoids the CORS preflight that kills Google Apps Script
+    body: buildPayload(message, extra)
+  });
+  return await response.json();
 }
 
 // ── Open / Close / Toggle ─────────────────────────────────────────────────────
@@ -26,6 +71,7 @@ function openChat() {
   initSession();
   document.getElementById('chatOverlay').classList.add('active');
   document.body.style.overflow = 'hidden';
+
   var bubble = document.getElementById('chatBubbleBtn');
   if (bubble) {
     bubble.classList.add('is-open');
@@ -34,6 +80,13 @@ function openChat() {
     if (ic) ic.style.display = 'none';
     if (ix) ix.style.display = 'block';
   }
+
+  if (!CHAT_CONFIG.greetingShown) {
+    CHAT_CONFIG.greetingShown = true;
+    clearStaticGreeting();
+    triggerGreeting();
+  }
+
   setTimeout(function() {
     var inp = document.getElementById('chatInput');
     if (inp) inp.focus();
@@ -61,7 +114,38 @@ function handleOverlayClick(event) {
   if (event.target === document.getElementById('chatOverlay')) closeChat();
 }
 
-// ── Send message ──────────────────────────────────────────────────────────────
+function clearStaticGreeting() {
+  var c = document.getElementById('chatMessages');
+  if (c) c.innerHTML = '';
+}
+
+// ── Trigger greeting from backend (GREETING state) ───────────────────────────
+async function triggerGreeting() {
+  if (!isBackendConnected()) {
+    appendMessage(
+      "👋 Hey! I'm your Deliytmedia assistant.\n\nWhat kind of business do you run?",
+      'bot'
+    );
+    return;
+  }
+
+  showTyping();
+  try {
+    var data = await postToBackend('__INIT__');
+    hideTyping();
+    handleAgentResponse(data);
+  } catch (err) {
+    hideTyping();
+    // Soft fallback — don't show error on greeting, just show welcome
+    appendMessage(
+      "👋 Hey! I'm your Deliytmedia assistant.\n\nWhat kind of business do you run?",
+      'bot'
+    );
+    console.error('[Deliy] Greeting error:', err);
+  }
+}
+
+// ── Main send ─────────────────────────────────────────────────────────────────
 async function sendMessage() {
   var input   = document.getElementById('chatInput');
   var message = input.value.trim();
@@ -75,21 +159,37 @@ async function sendMessage() {
   showTyping();
   CHAT_CONFIG.isTyping = true;
 
+  if (!isBackendConnected()) {
+    setTimeout(function() {
+      hideTyping();
+      CHAT_CONFIG.isTyping = false;
+      appendMessage(getSmartFallback(message), 'bot');
+      input.disabled = false;
+      document.getElementById('chatSend').disabled = false;
+      input.focus();
+    }, 700);
+    return;
+  }
+
   try {
-    var params = new URLSearchParams({
-      conversation_id: CHAT_CONFIG.conversationId,
-      message:         message,
-      timestamp:       new Date().toISOString()
-    });
-    var response = await fetch(CHAT_CONFIG.webhookUrl, { method: 'POST', body: params });
-    var data     = await response.json();
+    var data = await postToBackend(message);
     hideTyping();
     CHAT_CONFIG.isTyping = false;
     handleAgentResponse(data);
   } catch (err) {
     hideTyping();
     CHAT_CONFIG.isTyping = false;
-    appendMessage(getFallbackResponse(message), 'bot');
+    // Show the actual error type to help diagnose
+    var errMsg = "⚠️ Connection error. ";
+    if (err.message && err.message.includes('NetworkError')) {
+      errMsg += "Network blocked — check your Apps Script is deployed as 'Anyone' access.";
+    } else if (err.message && err.message.includes('Failed to fetch')) {
+      errMsg += "Could not reach the server. Is your Apps Script URL correct and deployed?";
+    } else {
+      errMsg += "Please try again or email hello@deliytmedia.com.";
+    }
+    appendMessage(errMsg, 'bot');
+    console.error('[Deliy] sendMessage error:', err);
   } finally {
     input.disabled = false;
     document.getElementById('chatSend').disabled = false;
@@ -99,30 +199,69 @@ async function sendMessage() {
 
 // ── Central response handler ──────────────────────────────────────────────────
 function handleAgentResponse(data) {
-  if (!data || !data.response) {
-    appendMessage("Something went wrong. Please email hello@deliytmedia.com directly.", 'bot');
+  if (!data) {
+    appendMessage("Something went wrong — no response from server.", 'bot');
     return;
   }
-  if (data.response === '__DATE_PICKER__' && data.availability) {
+
+  // Support both {response: "..."} and {message: "..."} shapes
+  var resp = data.response || data.message || data.text || null;
+
+  if (!resp) {
+    appendMessage("Got an empty response from the server. Check Apps Script logs.", 'bot');
+    console.warn('[Deliy] Empty response payload:', data);
+    return;
+  }
+
+  if (resp === '__DATE_PICKER__' && data.availability) {
     appendMessage("Almost there! Choose a date for your strategy call:", 'bot');
     appendDatePicker(data.availability);
-  } else if (data.response === '__SLOT_PICKER__' && data.slots) {
-    appendMessage('Now pick a time on ' + (data.date_label || 'your chosen date') + ' (WAT):', 'bot');
+  } else if (resp === '__SLOT_PICKER__' && data.slots) {
+    appendMessage(
+      'Now pick a time on ' + (data.date_label || 'your chosen date') + ' (WAT):',
+      'bot'
+    );
     appendSlotPicker(data.slots, data.date_label);
   } else {
-    appendMessage(data.response, 'bot');
+    appendMessage(resp, 'bot');
+  }
+
+  // Optional: quick-reply buttons if backend sends them
+  if (data.quick_replies && Array.isArray(data.quick_replies) && data.quick_replies.length) {
+    appendQuickReplies(data.quick_replies);
   }
 }
 
-// ── DATE PICKER ───────────────────────────────────────────────────────────────
+// ── Quick-reply chips ─────────────────────────────────────────────────────────
+function appendQuickReplies(replies) {
+  var container = document.getElementById('chatMessages');
+  var old = document.getElementById('quickReplies');
+  if (old) old.remove();
+  var wrapper = document.createElement('div');
+  wrapper.className = 'qr-wrapper';
+  wrapper.id        = 'quickReplies';
+  replies.forEach(function(r) {
+    var btn = document.createElement('button');
+    btn.className   = 'qr-btn';
+    btn.textContent = r;
+    btn.addEventListener('click', function() {
+      document.getElementById('quickReplies')?.remove();
+      document.getElementById('chatInput').value = r;
+      sendMessage();
+    });
+    wrapper.appendChild(btn);
+  });
+  container.appendChild(wrapper);
+  container.scrollTop = container.scrollHeight;
+}
+
+// ── Date picker ───────────────────────────────────────────────────────────────
 function appendDatePicker(availDates) {
   var container = document.getElementById('chatMessages');
   var wrapper   = document.createElement('div');
   wrapper.className = 'message bot-message picker-wrapper';
-
   var grid = document.createElement('div');
   grid.className = 'picker-grid';
-
   availDates.forEach(function(d) {
     var btn = document.createElement('button');
     btn.className = 'picker-btn';
@@ -133,7 +272,6 @@ function appendDatePicker(availDates) {
     btn.addEventListener('click', function() { selectDate(d.date, d.label); });
     grid.appendChild(btn);
   });
-
   wrapper.appendChild(grid);
   container.appendChild(wrapper);
   container.scrollTop = container.scrollHeight;
@@ -145,15 +283,13 @@ function selectDate(dateValue, dateLabel) {
   sendPickerValue(dateValue);
 }
 
-// ── SLOT PICKER ───────────────────────────────────────────────────────────────
+// ── Slot picker ───────────────────────────────────────────────────────────────
 function appendSlotPicker(slots, dateLabel) {
   var container = document.getElementById('chatMessages');
   var wrapper   = document.createElement('div');
   wrapper.className = 'message bot-message picker-wrapper';
-
   var grid = document.createElement('div');
   grid.className = 'picker-grid slot-grid';
-
   slots.forEach(function(s) {
     var btn = document.createElement('button');
     btn.className   = 'picker-btn slot-btn';
@@ -161,7 +297,6 @@ function appendSlotPicker(slots, dateLabel) {
     btn.addEventListener('click', function() { selectSlot(s.value, s.label); });
     grid.appendChild(btn);
   });
-
   wrapper.appendChild(grid);
   container.appendChild(wrapper);
   container.scrollTop = container.scrollHeight;
@@ -177,18 +312,11 @@ function removePickers() {
   document.querySelectorAll('.picker-wrapper').forEach(function(el) { el.remove(); });
 }
 
-// ── Send picker value to backend ──────────────────────────────────────────────
 async function sendPickerValue(value) {
   showTyping();
   CHAT_CONFIG.isTyping = true;
   try {
-    var params = new URLSearchParams({
-      conversation_id: CHAT_CONFIG.conversationId,
-      message:         value,
-      timestamp:       new Date().toISOString()
-    });
-    var response = await fetch(CHAT_CONFIG.webhookUrl, { method: 'POST', body: params });
-    var data     = await response.json();
+    var data = await postToBackend(value);
     hideTyping();
     CHAT_CONFIG.isTyping = false;
     handleAgentResponse(data);
@@ -199,7 +327,7 @@ async function sendPickerValue(value) {
   }
 }
 
-// ── Append message ────────────────────────────────────────────────────────────
+// ── Append message to chat ────────────────────────────────────────────────────
 function appendMessage(text, sender) {
   var container = document.getElementById('chatMessages');
   var wrapper   = document.createElement('div');
@@ -212,7 +340,6 @@ function appendMessage(text, sender) {
   container.scrollTop = container.scrollHeight;
 }
 
-// ── Format text (bold, bullets, code, linebreaks) ─────────────────────────────
 function formatText(text) {
   text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
   text = text.replace(/`(.*?)`/g, '<code>$1</code>');
@@ -235,6 +362,7 @@ function formatText(text) {
 
 // ── Typing indicator ──────────────────────────────────────────────────────────
 function showTyping() {
+  if (document.getElementById('typingIndicator')) return;
   var container = document.getElementById('chatMessages');
   var wrapper   = document.createElement('div');
   wrapper.className = 'message bot-message';
@@ -252,32 +380,30 @@ function hideTyping() {
   if (el) el.remove();
 }
 
+// ── Smart staged fallback (backend not connected) ─────────────────────────────
+var _fbStage = 0;
+function getSmartFallback(message) {
+  var stage = _fbStage++;
+  if (stage === 0) return "Got it — **" + message + "**. What's the main problem you're trying to fix?";
+  if (stage === 1) return "Understood. Roughly what budget are you working with — under ₦500k, ₦500k–₦2M, or above ₦2M?";
+  if (stage === 2) return "Perfect. I'd love to book you a free 30-minute strategy call. What's your name and email?";
+  if (stage === 3) return "Thanks! We'll be in touch within 24 hours to confirm your slot. 🙌";
+  var l = message.toLowerCase();
+  if (l.includes('price') || l.includes('cost')) return "WhatsApp agents from ₦200k, SaaS platforms from ₦500k. Final price is scoped on the strategy call.";
+  return "The best next step is a free strategy call. Want me to help set that up?";
+}
+
 // ── Enter key ─────────────────────────────────────────────────────────────────
 function handleChatKeyPress(e) {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
 }
 
-// ── Smooth scroll ─────────────────────────────────────────────────────────────
 function scrollToSection(id) {
   var el = document.getElementById(id);
   if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-// ── Fallback responses (backend not yet connected) ────────────────────────────
-function getFallbackResponse(message) {
-  var l = message.toLowerCase();
-  if (['hi','hey','hello','good morning'].some(function(w) { return l.startsWith(w); }))
-    return "Hey! I'm your Deliytmedia assistant. What kind of business do you run?";
-  if (l.includes('price') || l.includes('cost') || l.includes('how much'))
-    return "Pricing depends on what you need. WhatsApp agents from N200k, SaaS platforms from N500k. What are you building?";
-  if (l.includes('book') || l.includes('call') || l.includes('schedule'))
-    return "I'd love to get you on a strategy call! First, what kind of business do you run?";
-  if (l.includes('whatsapp'))
-    return "Our WhatsApp agents handle inquiries 24/7. What kind of business is it for?";
-  return "Tell me about your business and what you're trying to solve.";
-}
-
-// ── Init on page load ─────────────────────────────────────────────────────────
+// ── Init ──────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function() {
   initSession();
 
@@ -292,7 +418,6 @@ document.addEventListener('DOMContentLoaded', function() {
     if (e.key === 'Escape' && CHAT_CONFIG.isOpen) closeChat();
   });
 
-  // Scroll animations
   var observer = new IntersectionObserver(function(entries) {
     entries.forEach(function(entry) {
       if (entry.isIntersecting) entry.target.classList.add('visible');
@@ -307,7 +432,7 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 });
 
-// ── Injected styles for pickers + animations ──────────────────────────────────
+// ── Injected styles ───────────────────────────────────────────────────────────
 (function() {
   var s = document.createElement('style');
   s.textContent =
@@ -332,6 +457,11 @@ document.addEventListener('DOMContentLoaded', function() {
     'transform:translateY(-2px);box-shadow:0 4px 14px rgba(191,255,0,.2)}' +
     '.picker-main{font-weight:700;font-size:.9rem;color:#fff}' +
     '.picker-sub{font-size:.75rem;color:#8888aa}' +
-    '.slot-btn{flex-direction:row;justify-content:center;font-weight:600}';
+    '.slot-btn{flex-direction:row;justify-content:center;font-weight:600}' +
+    '.qr-wrapper{display:flex;flex-wrap:wrap;gap:8px;padding:4px 0 8px 0}' +
+    '.qr-btn{background:transparent;border:1.5px solid rgba(191,255,0,.35);border-radius:20px;' +
+    'padding:7px 16px;cursor:pointer;color:#BFFF00;font-family:Outfit,sans-serif;' +
+    'font-size:.83rem;font-weight:600;transition:all .18s;white-space:nowrap}' +
+    '.qr-btn:hover{background:rgba(191,255,0,.12);border-color:#BFFF00;transform:translateY(-1px)}';
   document.head.appendChild(s);
 })();
