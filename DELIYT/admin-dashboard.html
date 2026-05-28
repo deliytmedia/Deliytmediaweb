@@ -413,16 +413,119 @@
       .stats-row { grid-template-columns: repeat(2, 1fr); }
     }
     @media (max-width: 640px) {
-      .main { padding: 1.5rem 1rem; }
-      .stats-row { grid-template-columns: 1fr; }
-      .modal { width: 95vw; }
+      .main { padding: 1rem 0.85rem; }
+      .stats-row { grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+      .stat-box { padding: 1rem; }
+      .stat-box-value { font-size: 1.6rem; }
+      .modal { width: 95vw; max-height: 90vh; }
+      .panel-header { flex-wrap: wrap; gap: 0.75rem; }
+      table { font-size: 0.8rem; }
+      th, td { padding: 0.6rem 0.5rem; }
     }
-  </style>
+
+    /* ── Mobile top bar ── */
+    .mobile-topbar {
+      display: none;
+      position: sticky; top: 0; z-index: 200;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0.85rem 1rem;
+      align-items: center;
+      justify-content: space-between;
+    }
+    @media (max-width: 1024px) { .mobile-topbar { display: flex; } }
+    .mobile-logo {
+      font-size: 1.1rem; font-weight: 900;
+      background: linear-gradient(135deg,#BFFF00,#7CFF00);
+      -webkit-background-clip:text; background-clip:text;
+      -webkit-text-fill-color:transparent; color:transparent;
+    }
+    .mobile-topbar-right { display: flex; align-items: center; gap: 0.75rem; }
+    .hamburger {
+      background: var(--elevated); border: 1px solid var(--border);
+      border-radius: 8px; padding: 7px 10px; cursor: pointer;
+      color: var(--text); font-size: 1.1rem; line-height: 1;
+    }
+    .bell-btn {
+      position: relative;
+      background: var(--elevated); border: 1px solid var(--border);
+      border-radius: 8px; padding: 7px 10px; cursor: pointer;
+      color: var(--text); font-size: 1.1rem; line-height: 1;
+    }
+    .bell-badge {
+      position: absolute; top: -5px; right: -5px;
+      background: var(--hot); color: #fff;
+      font-size: 0.65rem; font-weight: 800;
+      padding: 2px 5px; border-radius: 10px;
+      display: none;
+    }
+    .bell-badge.show { display: block; }
+
+    /* ── Mobile slide-in nav ── */
+    .mobile-nav-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.6); z-index: 500;
+      backdrop-filter: blur(3px);
+    }
+    .mobile-nav-overlay.open { display: block; }
+    .mobile-nav {
+      position: fixed; top: 0; left: -280px; bottom: 0;
+      width: 260px; background: var(--surface);
+      border-right: 1px solid var(--border);
+      z-index: 600; transition: left 0.3s ease;
+      padding: 1.5rem 1rem; overflow-y: auto;
+      display: flex; flex-direction: column;
+    }
+    .mobile-nav.open { left: 0; }
+    .mobile-nav-logo {
+      font-size: 1.2rem; font-weight: 900;
+      background: linear-gradient(135deg,#BFFF00,#7CFF00);
+      -webkit-background-clip:text; background-clip:text;
+      -webkit-text-fill-color:transparent; color:transparent;
+      margin-bottom: 1.5rem; padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .mobile-nav-footer { margin-top: auto; padding-top: 1rem; border-top: 1px solid var(--border); }
+
+    /* ── Desktop bell in sidebar ── */
+    .sidebar-bell {
+      position: relative; display: inline-flex;
+      align-items: center; gap: 0.5rem;
+    }
+    .sidebar-bell-badge {
+      background: var(--hot); color: #fff;
+      font-size: 0.7rem; font-weight: 800;
+      padding: 2px 7px; border-radius: 20px;
+      display: none;
+    }
+    .sidebar-bell-badge.show { display: inline-block; }
+
+    /* ── Toggle switch ── */
+    .toggle-wrap { display: flex; align-items: center; gap: 0.6rem; }
+    .toggle { position: relative; width: 42px; height: 24px; cursor: pointer; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+      position: absolute; inset: 0;
+      background: var(--elevated); border: 1.5px solid var(--border);
+      border-radius: 24px; transition: all 0.25s;
+    }
+    .toggle-slider::before {
+      content: ''; position: absolute;
+      width: 16px; height: 16px; border-radius: 50%;
+      background: var(--muted);
+      left: 3px; top: 50%; transform: translateY(-50%);
+      transition: all 0.25s;
+    }
+    .toggle input:checked + .toggle-slider { background: rgba(191,255,0,0.2); border-color: var(--lime); }
+    .toggle input:checked + .toggle-slider::before { background: var(--lime); left: 20px; }
+    .toggle-label { font-size: 0.85rem; font-weight: 700; color: var(--muted); }
+    .toggle input:checked ~ .toggle-label-el { color: var(--lime); }
 </head>
 <body>
 
 
 <!-- ══ LOGIN WALL ══════════════════════════════════════════════════════════ -->
+<div class="auth-wall" id="authWall">
 <div class="auth-wall" id="authWall">
 
   <!-- SIGN IN CARD -->
@@ -481,6 +584,49 @@
 </div>
 <!-- ══ END AUTH WALL ═══════════════════════════════════════════════════════ -->
 
+<!-- ══ MOBILE TOP BAR ══════════════════════════════════════════════════════ -->
+<div class="mobile-topbar">
+  <div class="mobile-logo">⚡ Deliytmedia</div>
+  <div class="mobile-topbar-right">
+    <button class="bell-btn" onclick="toggleNotifications()" title="Notifications">
+      🔔 <span class="bell-badge" id="mobileBellBadge">0</span>
+    </button>
+    <button class="hamburger" onclick="openMobileNav()">☰</button>
+  </div>
+</div>
+
+<!-- ══ MOBILE NAV OVERLAY ══════════════════════════════════════════════════ -->
+<div class="mobile-nav-overlay" id="mobileNavOverlay" onclick="closeMobileNav()"></div>
+<div class="mobile-nav" id="mobileNav">
+  <div class="mobile-nav-logo">⚡ Deliytmedia</div>
+  <button class="nav-item" onclick="mobileNav('overview')">📊 Overview</button>
+  <button class="nav-item" onclick="mobileNav('conversations')">💬 Conversations</button>
+  <button class="nav-item" onclick="mobileNav('leads')">🔥 Leads</button>
+  <button class="nav-item" onclick="mobileNav('appointments')">📅 Appointments</button>
+  <button class="nav-item" onclick="mobileNav('escalations')">⚠️ Escalations</button>
+  <button class="nav-item" onclick="mobileNav('knowledge')">🧠 Knowledge Base</button>
+  <button class="nav-item" onclick="mobileNav('calendar')">📆 Availability</button>
+  <button class="nav-item" onclick="mobileNav('prompts')">🎯 Ad Prompts</button>
+  <button class="nav-item" onclick="mobileNav('settings')">⚙️ Settings</button>
+  <div class="mobile-nav-footer">
+    <button class="nav-item" onclick="refreshAll();closeMobileNav()">🔄 Refresh</button>
+    <button class="nav-item" style="color:#ff4455;margin-top:0.5rem" onclick="signOut()">🚪 Sign Out</button>
+  </div>
+</div>
+
+<!-- ══ NOTIFICATIONS PANEL ═════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="notifOverlay">
+  <div class="modal" style="width:480px;max-width:95vw">
+    <div class="modal-header">
+      <div style="font-weight:800;font-size:1.1rem">🔔 Notifications</div>
+      <button class="modal-close" onclick="closeNotifications()">×</button>
+    </div>
+    <div class="modal-body" id="notifList">
+      <div class="empty"><div class="empty-icon">🔔</div>No new notifications.</div>
+    </div>
+  </div>
+</div>
+
 <div class="shell">
 
   <!-- Sidebar -->
@@ -490,11 +636,16 @@
     <button class="nav-item" onclick="showView('conversations')">💬 Conversations</button>
     <button class="nav-item" onclick="showView('leads')">🔥 Leads</button>
     <button class="nav-item" onclick="showView('appointments')">📅 Appointments</button>
-    <button class="nav-item" onclick="showView('escalations')">⚠️ Escalations <span class="nav-badge" id="escBadge">0</span></button>
+    <button class="nav-item" onclick="showView('escalations')">⚠️ Escalations <span class="nav-badge" id="escBadge" style="display:none">0</span></button>
     <button class="nav-item" onclick="showView('knowledge')">🧠 Knowledge Base</button>
-      <button class="nav-item" onclick="showView('calendar')">📆 Availability</button>
-      <button class="nav-item" onclick="showView('prompts')">🎯 Ad Prompts</button>
+    <button class="nav-item" onclick="showView('calendar')">📆 Availability</button>
+    <button class="nav-item" onclick="showView('prompts')">🎯 Ad Prompts</button>
+    <button class="nav-item" onclick="showView('settings')">⚙️ Settings</button>
     <div class="sidebar-footer">
+      <button class="nav-item" onclick="toggleNotifications()">
+        🔔 Notifications
+        <span class="nav-badge sidebar-bell-badge" id="sidebarBellBadge">0</span>
+      </button>
       <button class="nav-item" onclick="refreshAll()">🔄 Refresh</button>
       <button class="nav-item" style="color:#ff4455;margin-top:0.5rem" onclick="signOut()">🚪 Sign Out</button>
     </div>
@@ -779,6 +930,68 @@
       </div>
     </div>
 
+    <!-- ── Settings ── -->
+    <div class="view" id="view-settings">
+      <div class="page-header">
+        <div><div class="page-title">Settings</div><div class="page-subtitle">Configure your agent, links and notifications</div></div>
+        <button class="btn btn-primary" onclick="saveSettings()">💾 Save Settings</button>
+      </div>
+
+      <!-- Website & Branding -->
+      <div class="panel" style="margin-bottom:1.5rem">
+        <div class="panel-header"><div class="panel-title">🌐 Website & Links</div></div>
+        <div class="panel-body" style="display:flex;flex-direction:column;gap:1.25rem">
+          <div>
+            <label style="display:block;font-size:0.8rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Website URL</label>
+            <input type="url" id="setting_website_url" class="search-box" style="width:100%"
+              placeholder="https://deliytmedia.com">
+            <div style="font-size:0.8rem;color:var(--muted);margin-top:5px">Used in cancel/reschedule links in confirmation emails and landing page ad URLs.</div>
+          </div>
+          <div>
+            <label style="display:block;font-size:0.8rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Business Name</label>
+            <input type="text" id="setting_business_name" class="search-box" style="width:100%"
+              placeholder="Deliytmedia Solutions">
+          </div>
+          <div>
+            <label style="display:block;font-size:0.8rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Business Phone</label>
+            <input type="tel" id="setting_business_phone" class="search-box" style="width:100%"
+              placeholder="08100000000">
+          </div>
+        </div>
+      </div>
+
+      <!-- Apps Script Config -->
+      <div class="panel" style="margin-bottom:1.5rem">
+        <div class="panel-header"><div class="panel-title">⚙️ Backend Connection</div></div>
+        <div class="panel-body" style="display:flex;flex-direction:column;gap:1.25rem">
+          <div>
+            <label style="display:block;font-size:0.8rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Apps Script URL</label>
+            <input type="url" id="setting_apps_script_url" class="search-box" style="width:100%"
+              placeholder="https://script.google.com/macros/s/.../exec">
+            <div style="font-size:0.8rem;color:var(--muted);margin-top:5px">Your deployed Google Apps Script Web App URL.</div>
+          </div>
+          <div>
+            <label style="display:block;font-size:0.8rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Google Sheets URL</label>
+            <input type="url" id="setting_sheets_url" class="search-box" style="width:100%"
+              placeholder="https://docs.google.com/spreadsheets/d/.../edit">
+          </div>
+          <div style="display:flex;gap:0.75rem">
+            <button class="btn btn-ghost" onclick="testBackendConnection()">🔌 Test Connection</button>
+            <div id="connTestResult" style="font-size:0.85rem;color:var(--muted);align-self:center"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Generated Landing URLs -->
+      <div class="panel">
+        <div class="panel-header"><div class="panel-title">🔗 Landing Page Ad URLs</div></div>
+        <div class="panel-body">
+          <div style="font-size:0.85rem;color:var(--muted);margin-bottom:1rem">These URLs use your Website URL above. Share them in your ad campaigns.</div>
+          <div id="settingsLandingUrls" style="display:flex;flex-direction:column;gap:0.6rem"></div>
+        </div>
+      </div>
+    </div>
+
   </main>
 </div>
 
@@ -805,13 +1018,70 @@
 <script>
   // ── CONFIG ────────────────────────────────────────────────────────────────
   const DASH_CONFIG = {
-    appsScriptUrl: 'YOUR_APPS_SCRIPT_WEB_APP_URL_HERE',
-    sheetsUrl:     'https://docs.google.com/spreadsheets/d/YOUR_SPREADSHEET_ID_HERE/edit'
+    get appsScriptUrl() { return localStorage.getItem('dm_apps_script_url') || 'YOUR_APPS_SCRIPT_WEB_APP_URL_HERE'; },
+    get sheetsUrl()     { return localStorage.getItem('dm_sheets_url')      || 'https://docs.google.com/spreadsheets/d/YOUR_SPREADSHEET_ID_HERE/edit'; },
+    get websiteUrl()    { return localStorage.getItem('dm_website_url')     || 'https://deliytmedia.com'; }
   };
 
   let allConversationsData = [];
   let allLeadsData = [];
   let currentView = 'overview';
+  let notifications = JSON.parse(localStorage.getItem('dm_notifications') || '[]');
+
+  // ── MOBILE NAV ────────────────────────────────────────────────────────────
+  function openMobileNav()  {
+    document.getElementById('mobileNav').classList.add('open');
+    document.getElementById('mobileNavOverlay').classList.add('open');
+  }
+  function closeMobileNav() {
+    document.getElementById('mobileNav').classList.remove('open');
+    document.getElementById('mobileNavOverlay').classList.remove('open');
+  }
+  function mobileNav(view) { closeMobileNav(); showView(view); }
+
+  // ── NOTIFICATIONS ─────────────────────────────────────────────────────────
+  function addNotification(type, title, body) {
+    const n = { id: Date.now(), type, title, body, read: false, time: new Date().toISOString() };
+    notifications.unshift(n);
+    if (notifications.length > 50) notifications = notifications.slice(0, 50);
+    localStorage.setItem('dm_notifications', JSON.stringify(notifications));
+    updateBellBadge();
+  }
+
+  function updateBellBadge() {
+    const unread = notifications.filter(n => !n.read).length;
+    const show   = unread > 0;
+    const badge  = document.getElementById('sidebarBellBadge');
+    const mbadge = document.getElementById('mobileBellBadge');
+    if (badge)  { badge.textContent  = unread; badge.classList.toggle('show', show); }
+    if (mbadge) { mbadge.textContent = unread; mbadge.classList.toggle('show', show); }
+  }
+
+  function toggleNotifications() {
+    document.getElementById('notifOverlay').classList.toggle('active');
+    renderNotifications();
+    // Mark all read
+    notifications.forEach(n => n.read = true);
+    localStorage.setItem('dm_notifications', JSON.stringify(notifications));
+    setTimeout(updateBellBadge, 300);
+  }
+  function closeNotifications() { document.getElementById('notifOverlay').classList.remove('active'); }
+
+  function renderNotifications() {
+    const el = document.getElementById('notifList');
+    if (!notifications.length) {
+      el.innerHTML = '<div class="empty"><div class="empty-icon">🔔</div>No notifications yet.</div>';
+      return;
+    }
+    el.innerHTML = notifications.slice(0, 20).map(n => `
+      <div style="padding:1rem;border-bottom:1px solid var(--border);${!n.read?'background:var(--elevated)':''}">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+          <strong style="color:${n.type==='hot'?'var(--hot)':n.type==='booking'?'var(--lime)':'var(--text)'}">${n.title}</strong>
+          <span style="font-size:0.75rem;color:var(--muted)">${formatTime(n.time)}</span>
+        </div>
+        <div style="font-size:0.85rem;color:var(--muted)">${n.body}</div>
+      </div>`).join('');
+  }
 
   // ── VIEW SWITCHER ──────────────────────────────────────────────────────────
   function showView(name) {
@@ -832,8 +1102,9 @@
       case 'appointments':  await loadAppointments();  break;
       case 'escalations':   await loadEscalations();   break;
       case 'knowledge':     await loadKnowledge();     break;
-      case 'calendar':     initCalendar();            break;
-      case 'prompts':      initPrompts();             break;
+      case 'calendar':      initCalendar();            break;
+      case 'prompts':       initPrompts();             break;
+      case 'settings':      initSettings();            break;
     }
   }
 
@@ -871,6 +1142,21 @@
     document.getElementById('st-escs').textContent  = pendingEsc.length;
     document.getElementById('escBadge').textContent = pendingEsc.length;
     document.getElementById('escBadge').style.display = pendingEsc.length > 0 ? 'inline' : 'none';
+
+    // Fire notifications for new hot leads / bookings
+    const lastCount = parseInt(localStorage.getItem('dm_last_hot_count') || '0');
+    if (hotLeads.length > lastCount) {
+      const newLeads = hotLeads.slice(0, hotLeads.length - lastCount);
+      newLeads.forEach(r => addNotification('hot', '🔥 Hot Lead: ' + (r[2]||'Visitor'), (r[6]||'Unknown business') + ' — Score: ' + (r[8]||'?')));
+    }
+    localStorage.setItem('dm_last_hot_count', hotLeads.length);
+
+    const lastApts = parseInt(localStorage.getItem('dm_last_apt_count') || '0');
+    if (pendingApt.length > lastApts) {
+      addNotification('booking', '📅 New Booking: ' + (pendingApt[0]?.[2]||'Visitor'), 'Strategy call on ' + (pendingApt[0]?.[7]||'—'));
+    }
+    localStorage.setItem('dm_last_apt_count', pendingApt.length);
+    updateBellBadge();
 
     // Recent convs
     renderRecentConvs(convs.slice(-5).reverse());
@@ -1453,23 +1739,23 @@
   let promptsData = JSON.parse(localStorage.getItem('dm_prompts') || 'null') || DEFAULT_PROMPTS;
 
   function renderPrompts() {
-    const grid = document.getElementById('promptsGrid');
+    const grid    = document.getElementById('promptsGrid');
+    const siteUrl = (localStorage.getItem('dm_website_url') || 'https://deliytmedia.com').replace(/\/$/,'');
     grid.innerHTML = promptsData.map((p, idx) => `
-      <div class="panel" style="${!p.active ? 'opacity:0.65' : ''}">
+      <div class="panel" style="${!p.active ? 'opacity:0.6' : ''}">
         <div class="panel-header">
-          <div style="display:flex;align-items:center;gap:0.75rem">
+          <div style="display:flex;align-items:center;gap:0.75rem;flex:1;min-width:0">
             <span style="font-size:1.1rem;font-weight:900;color:var(--lime)">#${p.id}</span>
             <input type="text" value="${escHtml(p.name)}" id="pname_${idx}"
-                   style="background:transparent;border:none;color:var(--text);font-family:'Outfit',sans-serif;font-size:1rem;font-weight:800;outline:none;flex:1"
+                   style="background:transparent;border:none;color:var(--text);font-family:'Outfit',sans-serif;font-size:1rem;font-weight:800;outline:none;flex:1;min-width:0"
                    onchange="updatePrompt(${idx},'name',this.value)">
           </div>
-          <div style="display:flex;gap:0.5rem;align-items:center">
-            <span class="badge badge-${p.active?'done':'pending'}" style="cursor:pointer"
-                  onclick="togglePromptActive(${idx})">${p.active?'Active':'Inactive'}</span>
-          </div>
+          <label class="toggle" title="${p.active?'Active':'Inactive'}">
+            <input type="checkbox" ${p.active?'checked':''} onchange="togglePromptActive(${idx})">
+            <span class="toggle-slider"></span>
+          </label>
         </div>
         <div class="panel-body" style="display:flex;flex-direction:column;gap:1rem">
-
           <div>
             <div style="font-size:0.8rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Opening Message</div>
             <textarea id="popening_${idx}" rows="2"
@@ -1477,15 +1763,13 @@
               onfocus="this.style.borderColor='var(--lime)'" onblur="this.style.borderColor='var(--border)'"
               onchange="updatePrompt(${idx},'opening_message',this.value)">${escHtml(p.opening_message)}</textarea>
           </div>
-
           <div>
-            <div style="font-size:0.8rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">System Prompt (Agent Behaviour)</div>
+            <div style="font-size:0.8rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">System Prompt</div>
             <textarea id="pprompt_${idx}" rows="4"
               style="width:100%;background:var(--elevated);border:1.5px solid var(--border);border-radius:10px;color:var(--text);font-family:'Outfit',sans-serif;font-size:0.85rem;padding:0.75rem;outline:none;resize:vertical;line-height:1.5"
               onfocus="this.style.borderColor='var(--lime)'" onblur="this.style.borderColor='var(--border)'"
               onchange="updatePrompt(${idx},'system_prompt',this.value)">${escHtml(p.system_prompt)}</textarea>
           </div>
-
           <div style="display:flex;gap:1rem">
             <div style="flex:1">
               <div style="font-size:0.8rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Max Exchanges</div>
@@ -1500,23 +1784,20 @@
                 onchange="updatePrompt(${idx},'session_seconds',parseInt(this.value))">
             </div>
           </div>
-
-          <div style="display:flex;gap:0.75rem;align-items:center;padding-top:0.5rem;border-top:1px solid var(--border)">
+          <div style="display:flex;gap:0.75rem;align-items:center;padding-top:0.5rem;border-top:1px solid var(--border);flex-wrap:wrap">
             <button class="btn btn-primary" style="font-size:0.85rem;padding:0.55rem 1.1rem" onclick="savePrompt(${idx})">💾 Save</button>
-            <div style="flex:1;background:var(--elevated);border-radius:8px;padding:0.5rem 0.85rem;font-size:0.8rem;color:var(--muted)">
-              Landing URL: <strong style="color:var(--lime)">landing.html?p=${p.id}</strong>
+            <div style="flex:1;background:var(--elevated);border-radius:8px;padding:0.5rem 0.85rem;font-size:0.8rem;color:var(--lime);min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">
+              ${siteUrl}/landing.html?p=${p.id}
             </div>
-            <button class="btn btn-ghost" style="font-size:0.8rem;padding:0.5rem 0.9rem"
-                    onclick="copyUrl(${p.id})">📋 Copy URL</button>
+            <button class="btn btn-ghost" style="font-size:0.8rem;padding:0.5rem 0.9rem;flex-shrink:0"
+                    onclick="copyPromptUrl(${p.id})">📋 Copy</button>
           </div>
         </div>
       </div>
     `).join('');
   }
 
-  function updatePrompt(idx, field, value) {
-    promptsData[idx][field] = value;
-  }
+  function updatePrompt(idx, field, value) { promptsData[idx][field] = value; }
 
   function togglePromptActive(idx) {
     promptsData[idx].active = !promptsData[idx].active;
@@ -1526,7 +1807,6 @@
 
   function savePrompt(idx) {
     saveAllPrompts();
-    // Flash save confirmation
     const btn = event.target;
     const orig = btn.textContent;
     btn.textContent = '✅ Saved!';
@@ -1543,14 +1823,95 @@
     }).catch(() => {}); // silent fail — localStorage is source of truth
   }
 
-  function copyUrl(promptId) {
-    const url = window.location.origin + '/landing.html?p=' + promptId;
+  function copyPromptUrl(promptId) {
+    const siteUrl = (localStorage.getItem('dm_website_url') || window.location.origin).replace(/\/$/,'');
+    const url = siteUrl + '/landing.html?p=' + promptId;
     navigator.clipboard.writeText(url).then(() => {
       const btn = event.target;
       const orig = btn.textContent;
       btn.textContent = '✅ Copied!';
       setTimeout(() => btn.textContent = orig, 1500);
     });
+  }
+
+  // ════════════════════════════════════════════════════════
+  // SETTINGS
+  // ════════════════════════════════════════════════════════
+
+  function initSettings() {
+    // Load saved values into inputs
+    document.getElementById('setting_website_url').value    = localStorage.getItem('dm_website_url')     || 'https://deliytmedia.com';
+    document.getElementById('setting_business_name').value  = localStorage.getItem('dm_business_name')   || 'Deliytmedia Solutions';
+    document.getElementById('setting_business_phone').value = localStorage.getItem('dm_business_phone')  || '';
+    document.getElementById('setting_apps_script_url').value= localStorage.getItem('dm_apps_script_url') || '';
+    document.getElementById('setting_sheets_url').value     = localStorage.getItem('dm_sheets_url')      || '';
+    renderSettingsLandingUrls();
+  }
+
+  function saveSettings() {
+    const websiteUrl    = document.getElementById('setting_website_url').value.trim();
+    const businessName  = document.getElementById('setting_business_name').value.trim();
+    const businessPhone = document.getElementById('setting_business_phone').value.trim();
+    const appsScriptUrl = document.getElementById('setting_apps_script_url').value.trim();
+    const sheetsUrl     = document.getElementById('setting_sheets_url').value.trim();
+
+    if (websiteUrl)    localStorage.setItem('dm_website_url',     websiteUrl);
+    if (businessName)  localStorage.setItem('dm_business_name',   businessName);
+    if (businessPhone) localStorage.setItem('dm_business_phone',  businessPhone);
+    if (appsScriptUrl) localStorage.setItem('dm_apps_script_url', appsScriptUrl);
+    if (sheetsUrl)     localStorage.setItem('dm_sheets_url',      sheetsUrl);
+
+    renderSettingsLandingUrls();
+
+    // Sync to backend if connected
+    if (appsScriptUrl && !appsScriptUrl.includes('YOUR_')) {
+      fetch(appsScriptUrl, {
+        method: 'POST',
+        body: new URLSearchParams({
+          action:       'saveSettings',
+          website_url:  websiteUrl,
+          business_name: businessName,
+          business_phone: businessPhone
+        })
+      }).catch(() => {});
+    }
+
+    const btn  = document.querySelector('[onclick="saveSettings()"]');
+    const orig = btn.textContent;
+    btn.textContent = '✅ Saved!';
+    setTimeout(() => btn.textContent = orig, 2000);
+  }
+
+  function renderSettingsLandingUrls() {
+    const siteUrl = (localStorage.getItem('dm_website_url') || 'https://deliytmedia.com').replace(/\/$/,'');
+    const el = document.getElementById('settingsLandingUrls');
+    if (!el) return;
+    el.innerHTML = promptsData.map(p => `
+      <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap">
+        <span style="font-size:0.8rem;font-weight:700;color:var(--muted);min-width:120px">${escHtml(p.name)}</span>
+        <code style="flex:1;background:var(--elevated);padding:7px 12px;border-radius:8px;font-size:0.8rem;color:var(--lime);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+          ${siteUrl}/landing.html?p=${p.id}
+        </code>
+        <button class="btn btn-ghost" style="font-size:0.8rem;padding:5px 10px;flex-shrink:0"
+                onclick="copyPromptUrl(${p.id})">📋</button>
+        ${!p.active ? '<span class="badge badge-pending">Inactive</span>' : ''}
+      </div>`).join('');
+  }
+
+  async function testBackendConnection() {
+    const url = localStorage.getItem('dm_apps_script_url');
+    const el  = document.getElementById('connTestResult');
+    if (!url || url.includes('YOUR_')) { el.textContent = '⚠️ No URL saved yet.'; return; }
+    el.textContent = 'Testing...';
+    try {
+      const res  = await fetch(url + '?action=ping');
+      const data = await res.json();
+      el.style.color = data.status === 'ok' ? 'var(--success)' : 'var(--hot)';
+      el.textContent = data.status === 'ok' ? '✅ Connected! ' + data.time : '❌ Error: ' + JSON.stringify(data);
+    } catch(e) {
+      el.style.color = 'var(--hot)';
+      el.textContent = '❌ Connection failed: ' + e.message;
+    }
   }
 
   function escHtml(str) {
@@ -1582,11 +1943,32 @@
 
   // ── On load: check session ────────────────────────────────────────────
   (function initAuth() {
+    // Detect Claude artifact iframe — localStorage throws or is sandboxed
+    // In that environment, skip auth and show the dashboard with mock data
+    let inArtifact = false;
+    try {
+      localStorage.setItem('_test', '1');
+      localStorage.removeItem('_test');
+    } catch(e) {
+      inArtifact = true;
+    }
+    // Also detect if we're in an iframe with no real origin
+    if (!inArtifact && window.self !== window.top) {
+      try { void window.top.location.href; } catch(e) { inArtifact = true; }
+    }
+
+    if (inArtifact) {
+      // Preview mode — bypass auth, show dashboard with mock data
+      document.getElementById('authWall').classList.add('hidden');
+      document.querySelector('.shell').style.visibility = 'visible';
+      setTimeout(loadOverview, 100);
+      return;
+    }
+
     const authed = sessionStorage.getItem(AUTH.SESSION_KEY);
     if (authed === 'true') {
       document.getElementById('authWall').classList.add('hidden');
     } else {
-      // Dashboard stays hidden until authed — block interaction
       document.querySelector('.shell').style.visibility = 'hidden';
     }
   })();
@@ -1809,6 +2191,10 @@
 
   // ── INIT ──────────────────────────────────────────────────────────────────
   // loadOverview() is called by auth on success — not here directly
+  updateBellBadge();
+  document.getElementById('notifOverlay').addEventListener('click', function(e) {
+    if (e.target === this) closeNotifications();
+  });
 </script>
 </body>
 </html>
