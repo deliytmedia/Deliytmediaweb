@@ -12,7 +12,8 @@
 
 const CHAT_CONFIG = {
   // ⚠️  PASTE YOUR APPS SCRIPT WEB APP URL BELOW ↓
-  webhookUrl: 'https://script.google.com/macros/s/AKfycbw7G9fW3MYPaOE4HxbO2QwjsBAicKbzKPfq2IHoMkGdPP3raQuJwrrXMYvNQUckOQX0/exec',
+  webhookUrl: 'YOUR_APPS_SCRIPT_WEB_APP_URL_HERE',
+  // ────────────────────────────────────────────────
 
   conversationId: null,
   isOpen:         false,
@@ -122,25 +123,20 @@ function clearStaticGreeting() {
 // ── Trigger greeting from backend (GREETING state) ───────────────────────────
 async function triggerGreeting() {
   if (!isBackendConnected()) {
-    appendMessage(
-      "👋 Hey! I'm your Deliytmedia assistant.\n\nWhat kind of business do you run?",
-      'bot'
-    );
+    appendMessage("👋 Hey! I'm Deliy, your Deliytmedia assistant.\n\nWhat can we help you build?", 'bot');
+    appendServiceMenu();
     return;
   }
-
   showTyping();
   try {
     var data = await postToBackend('__INIT__');
     hideTyping();
     handleAgentResponse(data);
+    if (!document.getElementById('serviceMenu')) appendServiceMenu();
   } catch (err) {
     hideTyping();
-    // Soft fallback — don't show error on greeting, just show welcome
-    appendMessage(
-      "👋 Hey! I'm your Deliytmedia assistant.\n\nWhat kind of business do you run?",
-      'bot'
-    );
+    appendMessage("👋 Hey! I'm Deliy, your Deliytmedia assistant.\n\nWhat can we help you build?", 'bot');
+    appendServiceMenu();
     console.error('[Deliy] Greeting error:', err);
   }
 }
@@ -462,6 +458,55 @@ document.addEventListener('DOMContentLoaded', function() {
     '.qr-btn{background:transparent;border:1.5px solid rgba(191,255,0,.35);border-radius:20px;' +
     'padding:7px 16px;cursor:pointer;color:#BFFF00;font-family:Outfit,sans-serif;' +
     'font-size:.83rem;font-weight:600;transition:all .18s;white-space:nowrap}' +
-    '.qr-btn:hover{background:rgba(191,255,0,.12);border-color:#BFFF00;transform:translateY(-1px)}';
+    '.qr-btn:hover{background:rgba(191,255,0,.12);border-color:#BFFF00;transform:translateY(-1px)}' +
+    // Service menu
+    '.service-menu{display:flex;flex-direction:column;gap:7px;padding:4px 0 8px 0;width:100%}' +
+    '.svc-btn{display:flex;align-items:center;gap:10px;background:#1c1c2e;' +
+    'border:1.5px solid rgba(191,255,0,0.15);border-radius:12px;padding:10px 14px;' +
+    'cursor:pointer;transition:all .2s;text-align:left;width:100%;font-family:Outfit,sans-serif}' +
+    '.svc-btn:hover{background:rgba(191,255,0,0.08);border-color:rgba(191,255,0,0.5);transform:translateX(3px)}' +
+    '.svc-emoji{font-size:1.1rem;flex-shrink:0;width:24px;text-align:center}' +
+    '.svc-info{display:flex;flex-direction:column;gap:1px}' +
+    '.svc-label{font-size:0.87rem;font-weight:700;color:#fff}' +
+    '.svc-price{font-size:0.73rem;color:#BFFF00;font-weight:600}';
   document.head.appendChild(s);
 })();
+
+// ══════════════════════════════════════════════════════════════════════════════
+// SERVICE MENU + UPDATED HANDLERS (appended patch)
+// ══════════════════════════════════════════════════════════════════════════════
+
+var SERVICES_MENU = [
+  { id:'1', emoji:'💬', label:'WhatsApp AI Agent',       price:'from ₦200k'  },
+  { id:'2', emoji:'🖥️', label:'Custom SaaS / Website',   price:'from ₦500k'  },
+  { id:'3', emoji:'⚙️', label:'Business Automation',     price:'from ₦150k'  },
+  { id:'4', emoji:'📱', label:'Social Media Management', price:'from ₦80k/mo'},
+  { id:'5', emoji:'✍️', label:'Content Marketing',       price:'from ₦120k/mo'},
+  { id:'6', emoji:'🚀', label:'Full Growth Package',     price:'from ₦800k'  }
+];
+
+function appendServiceMenu() {
+  var old = document.getElementById('serviceMenu');
+  if (old) old.remove();
+  var container = document.getElementById('chatMessages');
+  var wrapper   = document.createElement('div');
+  wrapper.id        = 'serviceMenu';
+  wrapper.className = 'service-menu';
+  SERVICES_MENU.forEach(function(svc) {
+    var btn = document.createElement('button');
+    btn.className = 'svc-btn';
+    btn.innerHTML =
+      '<span class="svc-emoji">' + svc.emoji + '</span>' +
+      '<span class="svc-info"><span class="svc-label">' + svc.label + '</span>' +
+      '<span class="svc-price">' + svc.price + '</span></span>';
+    btn.addEventListener('click', function() {
+      document.getElementById('serviceMenu')?.remove();
+      appendMessage(svc.emoji + ' ' + svc.label, 'user');
+      document.getElementById('chatInput').value = svc.id;
+      sendMessage();
+    });
+    wrapper.appendChild(btn);
+  });
+  container.appendChild(wrapper);
+  container.scrollTop = container.scrollHeight;
+}
