@@ -743,7 +743,7 @@
           <table>
             <thead><tr>
               <th>Date</th><th>Name</th><th>Email</th><th>Phone</th>
-              <th>Service</th><th>Intent</th><th>Score</th><th>Priority</th>
+              <th>Service</th><th>Pain Point</th><th>Budget</th><th>Score</th><th>Priority</th>
             </tr></thead>
             <tbody id="allLeadsTable">
               <tr class="loading-row"><td colspan="8"><div class="spinner"></div>Loading...</td></tr>
@@ -1132,7 +1132,7 @@
       fetchDashData('Escalations')
     ]);
 
-    const hotLeads   = leads.filter(r => r[9] === 'hot');
+    const hotLeads   = leads.filter(r => r[12] === 'hot');
     const pendingApt = apts.filter(r => r[8] === 'PENDING');
     const pendingEsc = escs.filter(r => r[7] === 'PENDING');
 
@@ -1143,17 +1143,14 @@
     document.getElementById('escBadge').textContent = pendingEsc.length;
     document.getElementById('escBadge').style.display = pendingEsc.length > 0 ? 'inline' : 'none';
 
-    // Fire notifications for new hot leads / bookings
     const lastCount = parseInt(localStorage.getItem('dm_last_hot_count') || '0');
     if (hotLeads.length > lastCount) {
-      const newLeads = hotLeads.slice(0, hotLeads.length - lastCount);
-      newLeads.forEach(r => addNotification('hot', '🔥 Hot Lead: ' + (r[2]||'Visitor'), (r[6]||'Unknown business') + ' — Score: ' + (r[8]||'?')));
+      hotLeads.slice(lastCount).forEach(r => addNotification('hot','🔥 Hot Lead: '+(r[2]||'Visitor'),(r[7]||'Unknown service')+' — Score: '+(r[11]||'?')));
     }
     localStorage.setItem('dm_last_hot_count', hotLeads.length);
-
     const lastApts = parseInt(localStorage.getItem('dm_last_apt_count') || '0');
     if (pendingApt.length > lastApts) {
-      addNotification('booking', '📅 New Booking: ' + (pendingApt[0]?.[2]||'Visitor'), 'Strategy call on ' + (pendingApt[0]?.[7]||'—'));
+      addNotification('booking','📅 New Booking: '+(pendingApt[0]?.[2]||'Visitor'),'Strategy call on '+(pendingApt[0]?.[7]||'—'));
     }
     localStorage.setItem('dm_last_apt_count', pendingApt.length);
     updateBellBadge();
@@ -1193,16 +1190,17 @@
   function renderHotLeads(leads) {
     const tbody = document.getElementById('hotLeadsTable');
     if (!leads.length) {
-      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:2rem; color:var(--muted)">No hot leads yet.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--muted)">No hot leads yet.</td></tr>';
       return;
     }
+    // Leads cols: [2]name [3]email [7]service [11]score [12]priority
     tbody.innerHTML = leads.map(r => `
       <tr>
         <td><strong>${r[2] || '—'}</strong></td>
-        <td><a href="mailto:${r[3]}" style="color:var(--lime); text-decoration:none">${r[3] || '—'}</a></td>
-        <td>${formatService(r[6])}</td>
-        <td><strong style="color:var(--lime)">${r[8]}</strong></td>
-        <td><span class="badge badge-${r[9]}">${r[9]}</span></td>
+        <td>${r[3] ? `<a href="mailto:${r[3]}" style="color:var(--lime);text-decoration:none">${r[3]}</a>` : '—'}</td>
+        <td>${r[7] || '—'}</td>
+        <td><strong style="color:var(--lime)">${r[11]}</strong></td>
+        <td><span class="badge badge-${r[12]}">${r[12]}</span></td>
       </tr>`).join('');
   }
 
@@ -1260,19 +1258,21 @@
     allLeadsData = data.reverse();
     const tbody = document.getElementById('allLeadsTable');
     if (!allLeadsData.length) {
-      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:3rem;color:var(--muted)">No leads yet.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:3rem;color:var(--muted)">No leads yet.</td></tr>';
       return;
     }
+    // Leads cols: [0]ts [1]conv_id [2]name [3]email [4]phone [5]budget [6]business [7]service [8]pain_point [9]timeline [10]intent [11]score [12]priority [13]form_step
     tbody.innerHTML = allLeadsData.map(r => `
       <tr>
         <td style="white-space:nowrap">${formatDate(r[0])}</td>
         <td><strong>${r[2] || '—'}</strong></td>
         <td>${r[3] ? `<a href="mailto:${r[3]}" style="color:var(--lime);text-decoration:none">${r[3]}</a>` : '—'}</td>
         <td>${r[4] || '—'}</td>
-        <td>${formatService(r[6])}</td>
-        <td style="color:var(--muted);font-size:0.85rem">${r[7]?.replace(/_/g,' ') || '—'}</td>
-        <td><strong style="color:var(--lime)">${r[8] || 0}</strong></td>
-        <td><span class="badge badge-${r[9]}">${r[9] || 'cold'}</span></td>
+        <td>${r[7] || '—'}</td>
+        <td style="color:var(--muted);font-size:0.85rem;max-width:160px">${(r[8]||'').substring(0,60) || '—'}</td>
+        <td>${r[5]?.replace(/_/g,' ') || '—'}</td>
+        <td><strong style="color:var(--lime)">${r[11] || 0}</strong></td>
+        <td><span class="badge badge-${r[12]||'cold'}">${r[12] || 'cold'}</span></td>
       </tr>`).join('');
   }
 
@@ -1380,30 +1380,36 @@
     document.getElementById('modalStateView').style.display = 'none';
   }
 
-  // ── MOCK DATA (for testing without backend) ───────────────────────────────
+  // ── MOCK DATA (for Claude artifact preview only — real data comes from Sheets) ──
   function getMockData(sheet) {
-    const now = new Date().toISOString();
+    const now  = new Date().toISOString();
+    const yest = new Date(Date.now() - 86400000).toISOString();
     if (sheet === 'States') return [
-      ['CONV_001', JSON.stringify({ step:'COMPLETED', intent:'book_appointment', collected:{name:'Tunde Adeyemi',email:'tunde@mybiz.com',phone:'+2348012345678',service_interest:'WhatsApp Agent'}, lead_score:75, lead_priority:'hot', message_count:8, updated_at:now })],
-      ['CONV_002', JSON.stringify({ step:'COLLECTING', intent:'get_estimate', collected:{service_type:'saas_platform'}, lead_score:30, lead_priority:'warm', message_count:4, updated_at:now })]
+      ['CONV_1748001',JSON.stringify({step:'COMPLETED',form_step:'COMPLETED',intent:'whatsapp_agent',collected:{name:'Tunde Adeyemi',email:'tunde@mybiz.com',phone:'08012345678',service:'whatsapp_agent',business_type:'Restaurant',pain_point:'Manual orders and no automated replies',budget:'500k_2m',timeline:'This month'},lead_score:85,lead_priority:'hot',message_count:9,updated_at:now})],
+      ['CONV_1748002',JSON.stringify({step:'COLLECTING',form_step:'BUDGET',intent:'social_media',collected:{name:'Amaka Obi',email:'amaka@fashionng.com',phone:'08098765432',service:'social_media',business_type:'Fashion store',pain_point:'Low engagement on Instagram'},lead_score:55,lead_priority:'warm',message_count:6,updated_at:yest})],
+      ['CONV_1748003',JSON.stringify({step:'DETECTING',form_step:'BUSINESS_TYPE',intent:'content_marketing',collected:{service:'content_marketing'},lead_score:15,lead_priority:'cold',message_count:2,updated_at:yest})]
     ];
     if (sheet === 'Leads') return [
-      [now,'CONV_001','Tunde Adeyemi','tunde@mybiz.com','+2348012345678','Restaurant','whatsapp_agent','book_appointment',75,'hot'],
-      [now,'CONV_002','','','','','saas_platform','get_estimate',30,'warm']
+      [now,'CONV_1748001','Tunde Adeyemi','tunde@mybiz.com','08012345678','500k_2m','Restaurant','WhatsApp AI Agent','Manual orders and no automated replies','This month','whatsapp_agent',85,'hot','COMPLETED'],
+      [yest,'CONV_1748002','Amaka Obi','amaka@fashionng.com','08098765432','under_500k','Fashion store','Social Media Management','Low Instagram engagement','Next month','social_media',55,'warm','BUDGET'],
+      [yest,'CONV_1748003','','','','','','Content Marketing','','','content_marketing',15,'cold','BUSINESS_TYPE']
     ];
     if (sheet === 'Appointments') return [
-      ['APT_001',now,'Tunde Adeyemi','tunde@mybiz.com','+2348012345678','','WhatsApp Agent for restaurant','Tomorrow 2pm','PENDING','CONV_001']
+      ['APT_001',now,'Tunde Adeyemi','tunde@mybiz.com','08012345678','Restaurant','WhatsApp AI Agent','2026-06-03T10:00','PENDING','CONV_1748001']
     ];
     if (sheet === 'Escalations') return [];
     if (sheet === 'Messages') return [
-      [now,'CONV_001','user','Hi, I need a WhatsApp chatbot for my restaurant'],
-      [now,'CONV_001','assistant',"Hey! A WhatsApp agent for a restaurant is exactly what we build. What's your name?"],
-      [now,'CONV_001','user','Tunde Adeyemi'],
-      [now,'CONV_001','assistant',"Nice to meet you Tunde! What's your email?"]
+      [now,'CONV_1748001','assistant',"Welcome! Here's what we build:\n1. WhatsApp AI Agent\n2. Custom SaaS Platform\n3. Business Automation\n4. Social Media Management\n5. Content Marketing\n6. Full Growth Package\n\nWhich interests you?"],
+      [now,'CONV_1748001','user','WhatsApp agent'],
+      [now,'CONV_1748001','assistant','What kind of business do you run?'],
+      [now,'CONV_1748001','user','Restaurant'],
+      [now,'CONV_1748001','assistant','What specific problem are you trying to solve?'],
+      [now,'CONV_1748001','user','Manual orders and no automated replies']
     ];
     if (sheet === 'Knowledge_Base') return [
-      ['services','overview','services,what do you do','Deliytmedia builds smart business systems...', now, true],
-      ['pricing','whatsapp agent','whatsapp price,chatbot price','WhatsApp Sales Agents start from ₦200,000...', now, true]
+      ['services','whatsapp agent','whatsapp,chatbot,bot','WhatsApp AI Agents handle customer inquiries 24/7, qualify leads and book appointments automatically. Starts from ₦200,000.',now,true],
+      ['services','social media','social,instagram,facebook','We manage your social media — strategy, content calendar, daily posts, community management. From ₦80,000/month.',now,true],
+      ['services','content marketing','content,blog,seo,newsletter','We produce blog articles, email newsletters, video scripts and SEO content. From ₦120,000/month.',now,true]
     ];
     return [];
   }
@@ -1428,7 +1434,15 @@
   }
 
   function formatService(code) {
-    return {'whatsapp_agent':'WhatsApp Agent','saas_platform':'SaaS Platform','customer_support':'Support System','social_media':'Social Media','mobile_app':'Mobile App'}[code] || code || '—';
+    const map = {
+      whatsapp_agent:    'WhatsApp AI Agent',
+      saas_platform:     'SaaS / Web Platform',
+      automation:        'Business Automation',
+      social_media:      'Social Media Mgmt',
+      content_marketing: 'Content Marketing',
+      full_package:      'Full Growth Package'
+    };
+    return map[code] || code || '—';
   }
 
 
