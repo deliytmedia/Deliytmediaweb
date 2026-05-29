@@ -520,6 +520,56 @@
     .toggle input:checked + .toggle-slider::before { background: var(--lime); left: 20px; }
     .toggle-label { font-size: 0.85rem; font-weight: 700; color: var(--muted); }
     .toggle input:checked ~ .toggle-label-el { color: var(--lime); }
+
+    /* ── Chat interface ── */
+    .conv-item { display:flex;align-items:center;gap:10px;padding:12px 16px;
+      cursor:pointer;border-bottom:1px solid var(--border);transition:background .15s;position:relative }
+    .conv-item:hover { background:var(--elevated) }
+    .conv-item.active { background:rgba(191,255,0,0.06);border-left:3px solid var(--lime) }
+    .conv-item.human-mode { border-left:3px solid #ffa500 }
+    .conv-avatar { width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#2a2a3e,#1c1c2e);
+      display:flex;align-items:center;justify-content:center;font-weight:900;
+      color:var(--lime);font-size:1rem;flex-shrink:0;border:1.5px solid var(--border) }
+    .conv-avatar.wa { border-color:#25D366;background:rgba(37,211,102,0.1) }
+    .conv-info { flex:1;min-width:0 }
+    .conv-name { font-weight:700;font-size:0.88rem;color:var(--text);
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis }
+    .conv-preview-text { font-size:0.77rem;color:var(--muted);
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px }
+    .conv-right { display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0 }
+    .conv-time { font-size:0.7rem;color:var(--muted) }
+    .conv-unread { background:var(--lime);color:#0a0a0f;border-radius:50%;
+      width:18px;height:18px;display:flex;align-items:center;justify-content:center;
+      font-size:0.65rem;font-weight:900 }
+    .filter-tab { background:var(--elevated);border:1px solid var(--border);border-radius:20px;
+      padding:4px 10px;font-size:0.75rem;font-weight:700;color:var(--muted);cursor:pointer;transition:all .15s }
+    .filter-tab.active { background:rgba(191,255,0,0.12);border-color:var(--lime);color:var(--lime) }
+
+    /* ── Thread messages ── */
+    .msg-row { display:flex;gap:8px;max-width:80%;margin-bottom:2px }
+    .msg-row.user { align-self:flex-end;flex-direction:row-reverse }
+    .msg-row.assistant { align-self:flex-start }
+    .msg-row.admin { align-self:flex-end;flex-direction:row-reverse }
+    .msg-bubble { padding:9px 13px;border-radius:14px;font-size:0.87rem;line-height:1.5;
+      word-break:break-word;white-space:pre-wrap }
+    .msg-bubble.user { background:rgba(191,255,0,0.15);color:var(--text);border-radius:14px 14px 4px 14px }
+    .msg-bubble.assistant { background:var(--elevated);color:var(--text);border-radius:14px 14px 14px 4px }
+    .msg-bubble.admin { background:rgba(37,211,102,0.15);color:#25D366;border-radius:14px 14px 4px 14px }
+    .msg-time { font-size:0.67rem;color:var(--muted);margin-top:3px;
+      white-space:nowrap;align-self:flex-end }
+    .msg-sender-label { font-size:0.7rem;color:var(--muted);margin-bottom:2px;padding:0 4px }
+
+    /* ── Quick templates ── */
+    .qr-template { background:var(--elevated);border:1px solid var(--border);border-radius:8px;
+      padding:4px 10px;font-size:0.75rem;color:var(--muted);cursor:pointer;transition:all .15s;
+      white-space:nowrap }
+    .qr-template:hover { border-color:var(--lime);color:var(--lime) }
+
+    @media (max-width:768px) {
+      #convList { width:100%;min-width:unset;display:none }
+      #convList.mobile-show { display:flex }
+      #chatPane { width:100% }
+    }
   </style>
 </head>
 <body>
@@ -584,7 +634,16 @@
 </div>
 <!-- ══ END AUTH WALL ═══════════════════════════════════════════════════════ -->
 
-<!-- ══ MOBILE TOP BAR ══════════════════════════════════════════════════════ -->
+<!-- ══ AI STATUS BANNER ════════════════════════════════════════════════════ -->
+<div id="aiStatusBanner" style="display:none;position:sticky;top:56px;z-index:150;
+  background:rgba(255,165,0,0.12);border-bottom:1px solid rgba(255,165,0,0.3);
+  padding:8px 20px;display:flex;align-items:center;gap:10px;font-size:0.83rem">
+  <span style="font-size:1rem">⚠️</span>
+  <span id="aiStatusText" style="color:#ffa500;font-weight:600;flex:1"></span>
+  <span style="color:#8888aa;font-size:0.75rem" id="aiStatusTime"></span>
+  <button onclick="document.getElementById('aiStatusBanner').style.display='none'"
+    style="background:none;border:none;color:#8888aa;cursor:pointer;font-size:1.1rem;padding:0 4px">×</button>
+</div>
 <div class="mobile-topbar">
   <div class="mobile-logo">⚡ Deliytmedia</div>
   <div class="mobile-topbar-right">
@@ -720,16 +779,131 @@
     </div>
 
     <!-- ── Conversations ── -->
-    <div class="view" id="view-conversations">
-      <div class="page-header">
-        <div>
-          <div class="page-title">Conversations</div>
-          <div class="page-subtitle" id="convCount">All conversations</div>
+    <!-- ══ Conversations — WhatsApp-style split pane ══════════════════════ -->
+    <div class="view" id="view-conversations" style="padding:0;height:calc(100vh - 60px);overflow:hidden">
+      <div style="display:flex;height:100%;overflow:hidden">
+
+        <!-- ── Left: conversation list ─────────────────────────────────── -->
+        <div id="convList" style="width:320px;min-width:280px;border-right:1px solid var(--border);
+          display:flex;flex-direction:column;background:var(--surface);overflow:hidden;flex-shrink:0">
+
+          <!-- Header -->
+          <div style="padding:16px;border-bottom:1px solid var(--border);flex-shrink:0">
+            <div style="font-weight:900;font-size:1.05rem;color:var(--text);margin-bottom:10px">
+              💬 Conversations
+              <span id="convCount" style="font-size:0.75rem;color:var(--muted);font-weight:400;margin-left:6px"></span>
+            </div>
+            <input type="text" class="search-box" placeholder="Search name, email, service..."
+              id="convSearch" oninput="filterConversations()" style="width:100%;font-size:0.85rem">
+            <!-- Filter tabs -->
+            <div style="display:flex;gap:6px;margin-top:8px">
+              <button class="filter-tab active" onclick="setConvFilter('all',this)">All</button>
+              <button class="filter-tab" onclick="setConvFilter('wa',this)">📱 WA</button>
+              <button class="filter-tab" onclick="setConvFilter('hot',this)">🔥 Hot</button>
+              <button class="filter-tab" onclick="setConvFilter('human',this)">👤 Human</button>
+            </div>
+          </div>
+
+          <!-- Conversation list -->
+          <div id="allConvs" style="flex:1;overflow-y:auto"></div>
         </div>
-        <input type="text" class="search-box" placeholder="Search by ID or message..." id="convSearch" oninput="filterConversations()">
-      </div>
-      <div id="allConvs">
-        <div class="empty"><div class="empty-icon">💬</div>Loading...</div>
+
+        <!-- ── Right: chat thread pane ──────────────────────────────────── -->
+        <div id="chatPane" style="flex:1;display:flex;flex-direction:column;background:var(--bg);overflow:hidden">
+
+          <!-- Empty state -->
+          <div id="chatPaneEmpty" style="flex:1;display:flex;flex-direction:column;align-items:center;
+            justify-content:center;color:var(--muted);text-align:center;padding:2rem">
+            <div style="font-size:3rem;margin-bottom:1rem">💬</div>
+            <div style="font-size:1rem;font-weight:700;color:var(--text)">Select a conversation</div>
+            <div style="font-size:0.85rem;margin-top:6px">Click a contact on the left to open the chat</div>
+          </div>
+
+          <!-- Active chat -->
+          <div id="chatPaneActive" style="display:none;flex-direction:column;height:100%">
+
+            <!-- Chat header -->
+            <div id="chatHeader" style="padding:12px 20px;border-bottom:1px solid var(--border);
+              background:var(--surface);display:flex;align-items:center;gap:12px;flex-shrink:0">
+              <div id="chatAvatar" style="width:40px;height:40px;border-radius:50%;
+                background:linear-gradient(135deg,#BFFF00,#7CFF00);display:flex;
+                align-items:center;justify-content:center;font-weight:900;color:#0a0a0f;
+                font-size:1rem;flex-shrink:0">?</div>
+              <div style="flex:1;min-width:0">
+                <div id="chatName" style="font-weight:800;font-size:0.95rem;color:var(--text)">—</div>
+                <div id="chatMeta" style="font-size:0.75rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">—</div>
+              </div>
+              <!-- Mode badge + controls -->
+              <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+                <span id="aiModeBadge" style="font-size:0.72rem;font-weight:700;padding:3px 10px;
+                  border-radius:20px;background:rgba(191,255,0,0.12);color:#BFFF00;border:1px solid rgba(191,255,0,0.3)">
+                  🤖 AI
+                </span>
+                <button id="takeoverBtn" onclick="toggleHumanMode()"
+                  style="font-size:0.78rem;font-weight:700;padding:5px 12px;border-radius:8px;cursor:pointer;
+                  background:rgba(255,165,0,0.1);color:#ffa500;border:1px solid rgba(255,165,0,0.3)">
+                  👤 Take Over
+                </button>
+                <button onclick="sendBookingViaWA()" title="Send booking confirmation via WhatsApp"
+                  style="font-size:0.78rem;font-weight:700;padding:5px 12px;border-radius:8px;cursor:pointer;
+                  background:rgba(37,211,102,0.1);color:#25D366;border:1px solid rgba(37,211,102,0.3)">
+                  📤 Send Booking WA
+                </button>
+                <button onclick="refreshThread()" title="Refresh"
+                  style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:1.1rem;padding:4px">↻</button>
+              </div>
+            </div>
+
+            <!-- Lead info bar -->
+            <div id="leadInfoBar" style="padding:8px 20px;background:var(--elevated);
+              border-bottom:1px solid var(--border);display:flex;gap:16px;flex-wrap:wrap;flex-shrink:0">
+            </div>
+
+            <!-- Messages -->
+            <div id="threadMessages" style="flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:8px">
+              <div class="empty"><div class="empty-icon">💬</div>Loading messages...</div>
+            </div>
+
+            <!-- Typing indicator -->
+            <div id="adminTyping" style="display:none;padding:4px 20px 0;font-size:0.78rem;color:var(--muted)">
+              Agent is typing...
+            </div>
+
+            <!-- Reply bar (shown in human mode) -->
+            <div id="replyBar" style="display:none;padding:12px 16px;border-top:1px solid var(--border);
+              background:var(--surface);flex-shrink:0">
+              <div style="display:flex;gap:8px;align-items:flex-end">
+                <textarea id="adminReplyInput" placeholder="Type a WhatsApp message..."
+                  rows="2" style="flex:1;background:var(--elevated);border:1.5px solid var(--border);
+                  border-radius:12px;color:var(--text);font-family:Outfit,sans-serif;
+                  font-size:0.9rem;padding:10px 14px;outline:none;resize:none;line-height:1.5"
+                  onfocus="this.style.borderColor='var(--lime)'"
+                  onblur="this.style.borderColor='var(--border)'"
+                  onkeydown="handleReplyKey(event)"></textarea>
+                <div style="display:flex;flex-direction:column;gap:6px">
+                  <button onclick="sendAdminReply()"
+                    style="background:var(--lime);color:#0a0a0f;border:none;border-radius:10px;
+                    padding:10px 16px;font-weight:900;cursor:pointer;font-size:0.9rem;white-space:nowrap">
+                    Send ↑
+                  </button>
+                  <button onclick="sendQuickTemplate('booking')"
+                    style="background:rgba(37,211,102,0.1);color:#25D366;border:1px solid rgba(37,211,102,0.3);
+                    border-radius:10px;padding:6px 10px;font-weight:700;cursor:pointer;font-size:0.75rem;white-space:nowrap">
+                    📅 Booking
+                  </button>
+                </div>
+              </div>
+              <!-- Quick reply templates -->
+              <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+                <button class="qr-template" onclick="insertTemplate('Hi {name}! Following up on your enquiry about {service}. Are you still interested?')">Follow up</button>
+                <button class="qr-template" onclick="insertTemplate('Our team is ready to get started on your project. When is a good time to call?')">Ready to start</button>
+                <button class="qr-template" onclick="insertTemplate('Your strategy call is confirmed for {date}. Here is the meeting link: {meet}')">Call confirmed</button>
+                <button class="qr-template" onclick="insertTemplate('Thank you for your interest in Deliytmedia. Let me know if you have any questions.')">General</button>
+              </div>
+            </div>
+
+          </div><!-- /chatPaneActive -->
+        </div><!-- /chatPane -->
       </div>
     </div>
 
@@ -953,9 +1127,14 @@
               placeholder="Deliytmedia Solutions">
           </div>
           <div>
-            <label style="display:block;font-size:0.8rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Business Phone</label>
-            <input type="tel" id="setting_business_phone" class="search-box" style="width:100%"
-              placeholder="08100000000">
+            <label style="display:block;font-size:0.8rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Push Notification Topic (ntfy.sh)</label>
+            <input type="text" id="setting_ntfy_topic" class="search-box" style="width:100%"
+              placeholder="deliytmedia-alerts-abc123">
+            <div style="font-size:0.8rem;color:var(--muted);margin-top:5px">
+              Install <strong style="color:var(--lime)">ntfy</strong> app on your phone → subscribe to this topic → get instant alerts for new bookings, hot leads and AI issues.
+              <a href="https://ntfy.sh" target="_blank" style="color:var(--lime)">ntfy.sh →</a>
+              <button class="btn btn-ghost" style="font-size:0.78rem;padding:4px 10px;margin-top:6px;display:block" onclick="requestPushPermission()">🔔 Enable Browser Notifications</button>
+            </div>
           </div>
         </div>
       </div>
@@ -1110,6 +1289,71 @@
 
   async function refreshAll() { await loadViewData(currentView); }
 
+  // ── AI STATUS POLLING ────────────────────────────────────────────────────
+  async function checkAIStatus() {
+    const url = DASH_CONFIG.appsScriptUrl;
+    if (!url || url.includes('YOUR_')) return;
+    try {
+      const res  = await fetch(url + '?action=aiStatus');
+      const data = await res.json();
+      const banner  = document.getElementById('aiStatusBanner');
+      const text    = document.getElementById('aiStatusText');
+      const timeEl  = document.getElementById('aiStatusTime');
+
+      if (data.available === false) {
+        banner.style.display = 'flex';
+        const msgs = {
+          rate_limit: '⚠️ AI rate limit reached — agent running on flowchart mode. Resets at midnight Pacific.',
+          error:      '❌ AI error (' + data.status_code + ') — agent on flowchart mode.',
+          exception:  '❌ AI connection failed — agent on flowchart mode.',
+          no_key:     '⚙️ Gemini API key not configured. Set it in Apps Script CONFIG.'
+        };
+        const type = data.last_event ? data.last_event.type : 'error';
+        text.textContent  = msgs[type] || '⚠️ AI unavailable — ' + (data.message||'unknown error');
+        timeEl.textContent = data.last_event ? formatTime(data.last_event.time) : '';
+        addNotification('ai_alert', '⚠️ AI Status: ' + (type||'error'), text.textContent);
+      } else {
+        banner.style.display = 'none';
+      }
+    } catch(e) {}
+  }
+
+  // Poll AI status every 5 minutes
+  setInterval(checkAIStatus, 5 * 60 * 1000);
+
+  // ── WEB PUSH NOTIFICATION SETUP ──────────────────────────────────────────
+  // Uses ntfy.sh web interface — no server needed
+  // Users can also install the ntfy app and subscribe to their topic
+  function setupPushNotifications() {
+    const topic = localStorage.getItem('dm_ntfy_topic');
+    if (!topic) return;
+    // Subscribe via EventSource for live push in browser
+    if (window._ntfySource) return; // already connected
+    try {
+      window._ntfySource = new EventSource('https://ntfy.sh/' + topic + '/sse');
+      window._ntfySource.addEventListener('message', function(e) {
+        try {
+          var msg = JSON.parse(e.data);
+          addNotification('push', msg.title||'📢 Alert', msg.message||'');
+          updateBellBadge();
+          // Browser notification if permitted
+          if (Notification.permission === 'granted') {
+            new Notification(msg.title||'Deliytmedia Alert', { body: msg.message, icon: '/favicon.ico' });
+          }
+        } catch(err) {}
+      });
+      window._ntfySource.onerror = function() { window._ntfySource = null; };
+    } catch(e) {}
+  }
+
+  function requestPushPermission() {
+    if ('Notification' in window) {
+      Notification.requestPermission().then(function(p) {
+        if (p === 'granted') setupPushNotifications();
+      });
+    }
+  }
+
   // ── FETCH FROM APPS SCRIPT ────────────────────────────────────────────────
   async function fetchDashData(sheet) {
     try {
@@ -1206,53 +1450,309 @@
 
   // ── CONVERSATIONS ─────────────────────────────────────────────────────────
   async function loadConversations() {
-    const data = await fetchDashData('States');
-    allConversationsData = data.reverse();
-    document.getElementById('convCount').textContent = `${data.length} total conversations`;
-    renderConversations(allConversationsData);
+    const [statesData, msgsData] = await Promise.all([
+      fetchDashData('States'),
+      fetchDashData('Messages')
+    ]);
+    allConversationsData = statesData.reverse();
+    allMessagesData      = msgsData;
+    document.getElementById('convCount').textContent = statesData.length + ' total';
+    renderConvList(allConversationsData);
   }
 
-  function renderConversations(convs) {
-    const el = document.getElementById('allConvs');
-    if (!convs.length) {
-      el.innerHTML = '<div class="empty"><div class="empty-icon">💬</div>No conversations yet.</div>';
-      return;
-    }
-    el.innerHTML = convs.map(row => {
-      let state = {};
-      try { state = JSON.parse(row[1]); } catch(e) {}
-      return `
-        <div class="conv-card" onclick="openConversation('${row[0]}')">
-          <div class="conv-card-top">
-            <div class="conv-id">${row[0]}</div>
-            <div class="conv-time">${formatTime(state.updated_at)}</div>
-          </div>
-          <div class="conv-preview">
-            ${state.collected?.name ? `<strong>${state.collected.name}</strong> · ` : ''}
-            ${state.collected?.email || ''}
-            ${state.intent ? ' · ' + state.intent.replace(/_/g,' ') : ''}
-          </div>
-          <div class="conv-meta">
-            <span class="badge badge-${state.step === 'COMPLETED' ? 'done' : 'new'}">${state.step || 'ACTIVE'}</span>
-            ${state.lead_priority ? `<span class="badge badge-${state.lead_priority}">${state.lead_priority}</span>` : ''}
-            ${state.intent ? `<span class="badge" style="background:rgba(102,126,234,0.1);color:#8899ff">${state.intent.replace(/_/g,' ')}</span>` : ''}
-            <span style="font-size:0.8rem; color:var(--muted); margin-left:auto">${state.message_count || 0} messages</span>
-          </div>
-        </div>`;
-    }).join('');
+  var allMessagesData    = [];
+  var activeConvId       = null;
+  var activeConvState    = {};
+  var convFilter         = 'all';
+  var _threadPollTimer   = null;
+
+  function setConvFilter(f, btn) {
+    convFilter = f;
+    document.querySelectorAll('.filter-tab').forEach(function(b){ b.classList.remove('active'); });
+    btn.classList.add('active');
+    filterConversations();
   }
 
   function filterConversations() {
-    const q = document.getElementById('convSearch').value.toLowerCase();
-    if (!q) { renderConversations(allConversationsData); return; }
-    const filtered = allConversationsData.filter(row => {
-      const s = JSON.stringify(row).toLowerCase();
-      return s.includes(q);
+    var q = (document.getElementById('convSearch').value||'').toLowerCase();
+    var filtered = allConversationsData.filter(function(row) {
+      var s = {};
+      try { s = JSON.parse(row[1]); } catch(e){}
+      var c = s.collected||{};
+      // Text filter
+      if (q) {
+        var haystack = [row[0],c.name,c.email,c.phone,c.service,c.business_type].join(' ').toLowerCase();
+        if (!haystack.includes(q)) return false;
+      }
+      // Tab filter
+      if (convFilter === 'wa')    return row[0].startsWith('WA_');
+      if (convFilter === 'hot')   return s.lead_priority === 'hot';
+      if (convFilter === 'human') return s.human_mode === true;
+      return true;
     });
-    renderConversations(filtered);
+    renderConvList(filtered);
   }
 
-  // ── LEADS ─────────────────────────────────────────────────────────────────
+  function renderConvList(convs) {
+    var el = document.getElementById('allConvs');
+    if (!convs.length) {
+      el.innerHTML = '<div class="empty" style="padding:2rem"><div class="empty-icon">💬</div>No conversations.</div>';
+      return;
+    }
+    el.innerHTML = convs.map(function(row) {
+      var s = {}, c = {};
+      try { s = JSON.parse(row[1]); c = s.collected||{}; } catch(e){}
+      var isWA      = row[0].startsWith('WA_');
+      var isHuman   = s.human_mode === true;
+      var name      = c.name || (isWA ? '+' + row[0].replace('WA_','') : row[0].substring(0,12)+'…');
+      var initials  = name.split(' ').map(function(w){return w[0]||'';}).join('').substring(0,2).toUpperCase() || '?';
+      var preview   = getLastMessage(row[0]);
+      var priority  = s.lead_priority || 'cold';
+      var isActive  = row[0] === activeConvId;
+
+      return '<div class="conv-item' + (isActive?' active':'') + (isHuman?' human-mode':'') + '"' +
+        ' onclick="openConversation(\'' + row[0] + '\')">' +
+        '<div class="conv-avatar' + (isWA?' wa':'') + '">' + (isWA?'📱':initials) + '</div>' +
+        '<div class="conv-info">' +
+          '<div class="conv-name">' + escHtml(name) +
+            (isHuman ? ' <span style="color:#ffa500;font-size:0.7rem">👤 Human</span>' : '') +
+          '</div>' +
+          '<div class="conv-preview-text">' + escHtml(preview) + '</div>' +
+        '</div>' +
+        '<div class="conv-right">' +
+          '<div class="conv-time">' + formatTime(s.updated_at) + '</div>' +
+          '<span class="badge badge-' + priority + '" style="font-size:0.65rem">' + priority + '</span>' +
+        '</div>' +
+        '</div>';
+    }).join('');
+  }
+
+  function getLastMessage(convId) {
+    var msgs = allMessagesData.filter(function(m){ return m[1]===convId; });
+    if (!msgs.length) return 'No messages yet';
+    var last = msgs[msgs.length-1];
+    return (last[3]||'').substring(0,50).replace(/\n/g,' ');
+  }
+
+  async function openConversation(convId) {
+    activeConvId = convId;
+    // Mark active in list
+    document.querySelectorAll('.conv-item').forEach(function(el){
+      el.classList.toggle('active', el.onclick.toString().includes("'"+convId+"'"));
+    });
+    document.getElementById('chatPaneEmpty').style.display  = 'none';
+    document.getElementById('chatPaneActive').style.display = 'flex';
+
+    await loadThread(convId);
+
+    // Start polling every 8s for new messages
+    if (_threadPollTimer) clearInterval(_threadPollTimer);
+    _threadPollTimer = setInterval(function(){ if (activeConvId===convId) loadThread(convId, true); }, 8000);
+  }
+
+  async function loadThread(convId, silent) {
+    if (!silent) document.getElementById('threadMessages').innerHTML =
+      '<div style="text-align:center;padding:2rem;color:var(--muted)">Loading...</div>';
+
+    const [statesData, msgsData] = await Promise.all([
+      fetchDashData('States'),
+      fetchDashData('Messages')
+    ]);
+
+    allMessagesData = msgsData;
+
+    // Find state
+    var stateRow = statesData.find(function(r){ return r[0]===convId; });
+    var state = {};
+    if (stateRow) { try { state = JSON.parse(stateRow[1]); } catch(e){} }
+    activeConvState = state;
+    var c = state.collected||{};
+    var isWA     = convId.startsWith('WA_');
+    var isHuman  = state.human_mode===true;
+
+    // Update header
+    var name    = c.name || (isWA?'+'+convId.replace('WA_',''):convId.substring(0,12));
+    var initials= name.split(' ').map(function(w){return w[0]||'';}).join('').substring(0,2).toUpperCase()||'?';
+    document.getElementById('chatAvatar').textContent = isWA?'📱':initials;
+    document.getElementById('chatName').textContent   = name;
+    document.getElementById('chatMeta').textContent   =
+      [c.service?formatService(c.service):'',c.business_type,c.email,c.phone].filter(Boolean).join(' · ');
+
+    // Update mode badge
+    var badge = document.getElementById('aiModeBadge');
+    var btn   = document.getElementById('takeoverBtn');
+    if (isHuman) {
+      badge.textContent = '👤 Human';
+      badge.style.cssText = 'font-size:0.72rem;font-weight:700;padding:3px 10px;border-radius:20px;background:rgba(255,165,0,0.12);color:#ffa500;border:1px solid rgba(255,165,0,0.3)';
+      btn.textContent   = '🤖 Return to AI';
+      btn.style.cssText = 'font-size:0.78rem;font-weight:700;padding:5px 12px;border-radius:8px;cursor:pointer;background:rgba(191,255,0,0.1);color:var(--lime);border:1px solid rgba(191,255,0,0.3)';
+      document.getElementById('replyBar').style.display = 'block';
+    } else {
+      badge.textContent = '🤖 AI';
+      badge.style.cssText = 'font-size:0.72rem;font-weight:700;padding:3px 10px;border-radius:20px;background:rgba(191,255,0,0.12);color:#BFFF00;border:1px solid rgba(191,255,0,0.3)';
+      btn.textContent   = '👤 Take Over';
+      btn.style.cssText = 'font-size:0.78rem;font-weight:700;padding:5px 12px;border-radius:8px;cursor:pointer;background:rgba(255,165,0,0.1);color:#ffa500;border:1px solid rgba(255,165,0,0.3)';
+      document.getElementById('replyBar').style.display = 'none';
+    }
+
+    // Lead info bar
+    var scoreColor = (state.lead_score||0)>=60?'var(--lime)':(state.lead_score||0)>=35?'#ffa500':'#ff4455';
+    document.getElementById('leadInfoBar').innerHTML =
+      pill('Score', (state.lead_score||0)+'/135', scoreColor) +
+      pill('Priority', (state.lead_priority||'cold').toUpperCase(), scoreColor) +
+      pill('Step', state.form_step||'—', 'var(--muted)') +
+      (c.budget ? pill('Budget', c.budget, 'var(--muted)') : '') +
+      (c.timeline ? pill('Timeline', c.timeline, 'var(--muted)') : '') +
+      (isWA ? pill('Channel','WhatsApp','#25D366') : pill('Channel','Web Chat','var(--lime)'));
+
+    // Render messages
+    var thread = msgsData.filter(function(r){ return r[1]===convId; });
+    if (!thread.length) {
+      document.getElementById('threadMessages').innerHTML =
+        '<div class="empty"><div class="empty-icon">💬</div>No messages yet.</div>';
+      return;
+    }
+
+    var scrollEl   = document.getElementById('threadMessages');
+    var wasAtBottom = scrollEl.scrollHeight - scrollEl.scrollTop - scrollEl.clientHeight < 60;
+
+    scrollEl.innerHTML = thread.map(function(r) {
+      var role     = r[2]; // user | assistant | admin
+      var content  = (r[3]||'').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+      var timeStr  = formatTime(r[0]);
+      var label    = role==='user'?'👤 Contact':role==='admin'?'👨‍💼 You':'🤖 Deliy';
+      return '<div class="msg-row ' + role + '">' +
+        '<div>' +
+          '<div class="msg-sender-label">' + label + '</div>' +
+          '<div class="msg-bubble ' + role + '">' + content + '</div>' +
+          '<div class="msg-time">' + timeStr + '</div>' +
+        '</div></div>';
+    }).join('');
+
+    if (wasAtBottom || !silent) scrollEl.scrollTop = scrollEl.scrollHeight;
+  }
+
+  function pill(label, value, color) {
+    return '<div style="display:flex;flex-direction:column;gap:1px;padding:0 12px;border-right:1px solid var(--border)">' +
+      '<span style="font-size:0.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px">' + label + '</span>' +
+      '<span style="font-size:0.82rem;font-weight:700;color:' + color + '">' + value + '</span>' +
+      '</div>';
+  }
+
+  // ── Toggle human/AI mode ──────────────────────────────────────────────────
+  async function toggleHumanMode() {
+    if (!activeConvId) return;
+    var url = DASH_CONFIG.appsScriptUrl;
+    if (!url || url.includes('YOUR_')) { alert('Connect your backend in Settings first.'); return; }
+    var newMode = !activeConvState.human_mode;
+    try {
+      await fetch(url, {
+        method: 'POST',
+        body: new URLSearchParams({
+          action:          'setHumanMode',
+          conversation_id: activeConvId,
+          human_mode:      newMode ? 'true' : 'false'
+        })
+      });
+      addNotification('info', newMode?'👤 Human mode on':'🤖 AI mode on',
+        activeConvId + ' switched to ' + (newMode?'human':'AI') + ' mode');
+      await loadThread(activeConvId);
+    } catch(e) { console.error(e); }
+  }
+
+  // ── Send admin reply via WhatsApp ─────────────────────────────────────────
+  async function sendAdminReply() {
+    var input   = document.getElementById('adminReplyInput');
+    var message = input.value.trim();
+    if (!message || !activeConvId) return;
+
+    var url = DASH_CONFIG.appsScriptUrl;
+    if (!url || url.includes('YOUR_')) { alert('Connect backend in Settings first.'); return; }
+
+    input.value   = '';
+    input.disabled = true;
+    document.getElementById('adminTyping').style.display = 'block';
+
+    try {
+      await fetch(url, {
+        method: 'POST',
+        body: new URLSearchParams({
+          action:          'humanReply',
+          conversation_id: activeConvId,
+          message:         message
+        })
+      });
+      await loadThread(activeConvId, true);
+    } catch(e) { console.error(e); }
+    finally {
+      input.disabled = false;
+      document.getElementById('adminTyping').style.display = 'none';
+      input.focus();
+    }
+  }
+
+  function handleReplyKey(e) {
+    if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); sendAdminReply(); }
+  }
+
+  // ── Send booking confirmation via WhatsApp ────────────────────────────────
+  async function sendBookingViaWA() {
+    if (!activeConvId) return;
+    var url = DASH_CONFIG.appsScriptUrl;
+    if (!url || url.includes('YOUR_')) { alert('Connect backend in Settings first.'); return; }
+
+    var c = activeConvState.collected||{};
+    if (!c.phone) { alert('No phone number for this contact.'); return; }
+
+    var confirmed = confirm('Send booking confirmation to ' + (c.name||'this contact') + ' on WhatsApp?\n\nPhone: ' + c.phone);
+    if (!confirmed) return;
+
+    try {
+      var res = await fetch(url, {
+        method: 'POST',
+        body: new URLSearchParams({
+          action:          'sendBookingWA',
+          conversation_id: activeConvId
+        })
+      });
+      var data = await res.json();
+      if (data.success) {
+        addNotification('booking', '📤 Booking sent via WA', (c.name||'Contact') + ' — ' + c.phone);
+        await loadThread(activeConvId, true);
+      } else {
+        alert('Failed: ' + (data.error||'Unknown error'));
+      }
+    } catch(e) { alert('Error: ' + e.message); }
+  }
+
+  // ── Quick reply templates ─────────────────────────────────────────────────
+  function insertTemplate(tpl) {
+    var c    = activeConvState.collected||{};
+    var text = tpl
+      .replace('{name}',    c.name||'there')
+      .replace('{service}', c.service?formatService(c.service):'our services')
+      .replace('{date}',    activeConvState.booked_slot||'your booked date')
+      .replace('{meet}',    'https://meet.google.com/');
+    document.getElementById('adminReplyInput').value = text;
+    document.getElementById('adminReplyInput').focus();
+  }
+
+  function sendQuickTemplate(type) {
+    if (type==='booking') {
+      sendBookingViaWA();
+    }
+  }
+
+  async function refreshThread() {
+    if (activeConvId) await loadThread(activeConvId);
+  }
+
+  function closeModal() {
+    if (_threadPollTimer) { clearInterval(_threadPollTimer); _threadPollTimer = null; }
+    activeConvId = null;
+    document.getElementById('chatPaneEmpty').style.display  = 'flex';
+    document.getElementById('chatPaneActive').style.display = 'none';
+  }
   async function loadLeads() {
     const data = await fetchDashData('Leads');
     allLeadsData = data.reverse();
@@ -1853,47 +2353,48 @@
   // ════════════════════════════════════════════════════════
 
   function initSettings() {
-    // Load saved values into inputs
     document.getElementById('setting_website_url').value    = localStorage.getItem('dm_website_url')     || 'https://deliytmedia.com';
     document.getElementById('setting_business_name').value  = localStorage.getItem('dm_business_name')   || 'Deliytmedia Solutions';
     document.getElementById('setting_business_phone').value = localStorage.getItem('dm_business_phone')  || '';
     document.getElementById('setting_apps_script_url').value= localStorage.getItem('dm_apps_script_url') || '';
     document.getElementById('setting_sheets_url').value     = localStorage.getItem('dm_sheets_url')      || '';
+    document.getElementById('setting_ntfy_topic').value     = localStorage.getItem('dm_ntfy_topic')      || '';
     renderSettingsLandingUrls();
   }
 
   function saveSettings() {
-    const websiteUrl    = document.getElementById('setting_website_url').value.trim();
-    const businessName  = document.getElementById('setting_business_name').value.trim();
-    const businessPhone = document.getElementById('setting_business_phone').value.trim();
-    const appsScriptUrl = document.getElementById('setting_apps_script_url').value.trim();
-    const sheetsUrl     = document.getElementById('setting_sheets_url').value.trim();
+    const fields = {
+      dm_website_url:     'setting_website_url',
+      dm_business_name:   'setting_business_name',
+      dm_business_phone:  'setting_business_phone',
+      dm_apps_script_url: 'setting_apps_script_url',
+      dm_sheets_url:      'setting_sheets_url',
+      dm_ntfy_topic:      'setting_ntfy_topic'
+    };
+    Object.entries(fields).forEach(function([key, id]) {
+      const val = document.getElementById(id).value.trim();
+      if (val) localStorage.setItem(key, val);
+    });
 
-    if (websiteUrl)    localStorage.setItem('dm_website_url',     websiteUrl);
-    if (businessName)  localStorage.setItem('dm_business_name',   businessName);
-    if (businessPhone) localStorage.setItem('dm_business_phone',  businessPhone);
-    if (appsScriptUrl) localStorage.setItem('dm_apps_script_url', appsScriptUrl);
-    if (sheetsUrl)     localStorage.setItem('dm_sheets_url',      sheetsUrl);
-
+    // Reconnect push if topic changed
+    if (window._ntfySource) { window._ntfySource.close(); window._ntfySource = null; }
+    setupPushNotifications();
     renderSettingsLandingUrls();
 
-    // Sync to backend if connected
+    const appsScriptUrl = localStorage.getItem('dm_apps_script_url');
     if (appsScriptUrl && !appsScriptUrl.includes('YOUR_')) {
       fetch(appsScriptUrl, {
-        method: 'POST',
-        body: new URLSearchParams({
-          action:       'saveSettings',
-          website_url:  websiteUrl,
-          business_name: businessName,
-          business_phone: businessPhone
+        method:'POST',
+        body: new URLSearchParams({ action:'saveSettings',
+          website_url:    localStorage.getItem('dm_website_url')||'',
+          business_name:  localStorage.getItem('dm_business_name')||'',
+          business_phone: localStorage.getItem('dm_business_phone')||''
         })
-      }).catch(() => {});
+      }).catch(function(){});
     }
 
-    const btn  = document.querySelector('[onclick="saveSettings()"]');
-    const orig = btn.textContent;
-    btn.textContent = '✅ Saved!';
-    setTimeout(() => btn.textContent = orig, 2000);
+    const btn = document.querySelector('[onclick="saveSettings()"]');
+    if (btn) { const o = btn.textContent; btn.textContent = '✅ Saved!'; setTimeout(function(){ btn.textContent = o; }, 2000); }
   }
 
   function renderSettingsLandingUrls() {
@@ -2206,6 +2707,8 @@
   // ── INIT ──────────────────────────────────────────────────────────────────
   // loadOverview() is called by auth on success — not here directly
   updateBellBadge();
+  setTimeout(checkAIStatus, 3000); // check AI status 3s after load
+  setupPushNotifications();
   document.getElementById('notifOverlay').addEventListener('click', function(e) {
     if (e.target === this) closeNotifications();
   });
