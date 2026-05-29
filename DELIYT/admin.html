@@ -1273,8 +1273,10 @@
   function showView(name) {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     document.getElementById('view-' + name).classList.add('active');
-    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-    event?.target?.classList.add('active');
+    document.querySelectorAll('.nav-item').forEach(n => {
+      n.classList.remove('active');
+      if (n.getAttribute('onclick')?.includes(`'${name}'`)) n.classList.add('active');
+    });
     currentView = name;
     loadViewData(name);
   }
@@ -2345,10 +2347,11 @@
   }
 
   function copyPromptUrl(promptId) {
+    const btn = event?.target;
     const siteUrl = (localStorage.getItem('dm_website_url') || window.location.origin).replace(/\/$/,'');
     const url = siteUrl + '/landing.html?p=' + promptId;
     navigator.clipboard.writeText(url).then(() => {
-      const btn = event.target;
+      if (!btn) return;
       const orig = btn.textContent;
       btn.textContent = '✅ Copied!';
       setTimeout(() => btn.textContent = orig, 1500);
