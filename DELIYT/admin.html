@@ -521,6 +521,31 @@
     .toggle-label { font-size: 0.85rem; font-weight: 700; color: var(--muted); }
     .toggle input:checked ~ .toggle-label-el { color: var(--lime); }
 
+    /* ── Settings form ── */
+    .setting-label {
+      display:block;font-size:0.8rem;font-weight:700;color:var(--muted);
+      text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px
+    }
+    .setting-hint { font-size:0.8rem;color:var(--muted);margin-top:5px;line-height:1.5 }
+    select.search-box {
+      appearance:none;-webkit-appearance:none;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%238888aa' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
+      background-repeat:no-repeat;background-position:right 14px center;padding-right:36px
+    }
+    /* ── Connection status cards ── */
+    .conn-card {
+      background:var(--elevated);border:1px solid var(--border);border-radius:12px;
+      padding:14px;text-align:center;transition:border-color .2s
+    }
+    .conn-card.ok  { border-color:rgba(0,232,122,0.4);background:rgba(0,232,122,0.06) }
+    .conn-card.err { border-color:rgba(255,68,85,0.4);background:rgba(255,68,85,0.06) }
+    .conn-card.loading { border-color:rgba(191,255,0,0.2) }
+    .conn-card-icon  { font-size:1.4rem;margin-bottom:6px }
+    .conn-card-label { font-size:0.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px }
+    .conn-card-status{ font-size:0.82rem;font-weight:700;color:var(--muted) }
+    .conn-card.ok  .conn-card-status { color:#00e87a }
+    .conn-card.err .conn-card-status { color:var(--hot) }
+
     /* ── Chat interface ── */
     .conv-item { display:flex;align-items:center;gap:10px;padding:12px 16px;
       cursor:pointer;border-bottom:1px solid var(--border);transition:background .15s;position:relative }
@@ -1105,93 +1130,189 @@
     </div>
 
     <!-- ── Settings ── -->
+    <!-- ══ Settings ══════════════════════════════════════════════════════════ -->
     <div class="view" id="view-settings">
       <div class="page-header">
-        <div><div class="page-title">Settings</div><div class="page-subtitle">Configure your agent, links and notifications</div></div>
+        <div><div class="page-title">⚙️ Settings</div><div class="page-subtitle">Configure your agent, links and notifications</div></div>
         <button class="btn btn-primary" onclick="saveSettings()">💾 Save Settings</button>
       </div>
 
-      <!-- Website & Branding -->
+      <!-- ── Website & Branding ── -->
       <div class="panel" style="margin-bottom:1.5rem">
-        <div class="panel-header"><div class="panel-title">🌐 Website & Links</div></div>
+        <div class="panel-header"><div class="panel-title">🌐 Website & Branding</div></div>
         <div class="panel-body" style="display:flex;flex-direction:column;gap:1.25rem">
           <div>
-            <label style="display:block;font-size:0.8rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Website URL</label>
-            <input type="url" id="setting_website_url" class="search-box" style="width:100%"
-              placeholder="https://deliytmedia.com">
-            <div style="font-size:0.8rem;color:var(--muted);margin-top:5px">Used in cancel/reschedule links in confirmation emails and landing page ad URLs.</div>
+            <label class="setting-label">Website URL</label>
+            <input type="url" id="setting_website_url" class="search-box" style="width:100%" placeholder="https://deliytmedia.com">
+            <div class="setting-hint">Used in cancel/reschedule links in emails and all landing page URLs.</div>
           </div>
-          <div>
-            <label style="display:block;font-size:0.8rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Business Name</label>
-            <input type="text" id="setting_business_name" class="search-box" style="width:100%"
-              placeholder="Deliytmedia Solutions">
-          </div>
-          <div>
-            <label style="display:block;font-size:0.8rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Push Notification Topic (ntfy.sh)</label>
-            <input type="text" id="setting_ntfy_topic" class="search-box" style="width:100%"
-              placeholder="deliytmedia-alerts-abc123">
-            <div style="font-size:0.8rem;color:var(--muted);margin-top:5px">
-              Install <strong style="color:var(--lime)">ntfy</strong> app on your phone → subscribe to this topic → get instant alerts for new bookings, hot leads and AI issues.
-              <a href="https://ntfy.sh" target="_blank" style="color:var(--lime)">ntfy.sh →</a>
-              <button class="btn btn-ghost" style="font-size:0.78rem;padding:4px 10px;margin-top:6px;display:block" onclick="requestPushPermission()">🔔 Enable Browser Notifications</button>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+            <div>
+              <label class="setting-label">Business Name</label>
+              <input type="text" id="setting_business_name" class="search-box" style="width:100%" placeholder="Deliytmedia Solutions">
             </div>
+            <div>
+              <label class="setting-label">Business Email</label>
+              <input type="email" id="setting_business_email" class="search-box" style="width:100%" placeholder="hello@deliytmedia.com">
+              <div class="setting-hint">Owner notification emails go here.</div>
+            </div>
+          </div>
+          <div>
+            <label class="setting-label">Business Phone / WhatsApp</label>
+            <input type="tel" id="setting_business_phone" class="search-box" style="width:100%" placeholder="08100000000">
           </div>
         </div>
       </div>
 
-      <!-- Apps Script Config -->
+      <!-- ── Backend Connection ── -->
       <div class="panel" style="margin-bottom:1.5rem">
-        <div class="panel-header"><div class="panel-title">⚙️ Backend Connection</div></div>
+        <div class="panel-header">
+          <div class="panel-title">⚙️ Backend Connection</div>
+          <div id="backendStatusDot" style="width:10px;height:10px;border-radius:50%;background:var(--muted);flex-shrink:0"></div>
+        </div>
         <div class="panel-body" style="display:flex;flex-direction:column;gap:1.25rem">
           <div>
-            <label style="display:block;font-size:0.8rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Apps Script URL</label>
+            <label class="setting-label">Apps Script URL</label>
             <input type="url" id="setting_apps_script_url" class="search-box" style="width:100%"
               placeholder="https://script.google.com/macros/s/.../exec">
-            <div style="font-size:0.8rem;color:var(--muted);margin-top:5px">Your deployed Google Apps Script Web App URL.</div>
+            <div class="setting-hint">This is the only URL the dashboard needs. All credentials stay in your Apps Script.</div>
           </div>
           <div>
-            <label style="display:block;font-size:0.8rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Google Sheets URL</label>
+            <label class="setting-label">Google Sheets</label>
             <input type="url" id="setting_sheets_url" class="search-box" style="width:100%"
               placeholder="https://docs.google.com/spreadsheets/d/.../edit">
           </div>
-          <div style="display:flex;gap:0.75rem">
-            <button class="btn btn-ghost" onclick="testBackendConnection()">🔌 Test Connection</button>
-            <div id="connTestResult" style="font-size:0.85rem;color:var(--muted);align-self:center"></div>
+          <!-- Status cards -->
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.75rem" id="connectionStatusCards">
+            <div class="conn-card" id="card_backend">
+              <div class="conn-card-icon">⚙️</div>
+              <div class="conn-card-label">Backend</div>
+              <div class="conn-card-status" id="status_backend">—</div>
+            </div>
+            <div class="conn-card" id="card_gemini">
+              <div class="conn-card-icon">🤖</div>
+              <div class="conn-card-label">Gemini AI</div>
+              <div class="conn-card-status" id="status_gemini">—</div>
+            </div>
+            <div class="conn-card" id="card_sheets">
+              <div class="conn-card-icon">📊</div>
+              <div class="conn-card-label">Sheets</div>
+              <div class="conn-card-status" id="status_sheets">—</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap">
+            <button class="btn btn-primary" onclick="runFullConnectionTest()" id="testAllBtn">
+              🔌 Test All Connections
+            </button>
+            <a id="sheetsLink" href="#" target="_blank" class="btn btn-ghost" style="text-decoration:none">📊 Open Sheets</a>
           </div>
         </div>
       </div>
 
-      <!-- Generated Landing URLs -->
-      <div class="panel">
-        <div class="panel-header"><div class="panel-title">🔗 Landing Page Ad URLs</div></div>
-        <div class="panel-body">
-          <div style="font-size:0.85rem;color:var(--muted);margin-bottom:1rem">These URLs use your Website URL above. Share them in your ad campaigns.</div>
-          <div id="settingsLandingUrls" style="display:flex;flex-direction:column;gap:0.6rem"></div>
+      <!-- ── WhatsApp ── -->
+      <div class="panel" style="margin-bottom:1.5rem">
+        <div class="panel-header">
+          <div class="panel-title">💬 WhatsApp Business API</div>
+          <div id="waStatusDot" style="width:10px;height:10px;border-radius:50%;background:var(--muted);flex-shrink:0"></div>
+        </div>
+        <div class="panel-body" style="display:flex;flex-direction:column;gap:1.25rem">
+          <!-- Info box — credentials stay in Apps Script -->
+          <div style="background:var(--elevated);border:1px solid rgba(191,255,0,0.15);border-radius:12px;padding:14px 16px">
+            <div style="font-size:0.85rem;font-weight:700;color:var(--lime);margin-bottom:6px">🔒 Credentials stored securely in Apps Script</div>
+            <div style="font-size:0.82rem;color:var(--muted);line-height:1.6">
+              Your WhatsApp <code style="color:var(--text);background:rgba(255,255,255,0.06);padding:1px 5px;border-radius:4px">ACCESS_TOKEN</code> and
+              <code style="color:var(--text);background:rgba(255,255,255,0.06);padding:1px 5px;border-radius:4px">PHONE_NUMBER_ID</code>
+              live in <strong style="color:var(--text)">WHATSAPP_CONFIG</strong> in your Apps Script — never in the browser.
+            </div>
+          </div>
+          <!-- Status card -->
+          <div id="waStatusCard" style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem">
+            <div class="conn-card" id="card_wa">
+              <div class="conn-card-icon">📱</div>
+              <div class="conn-card-label">WhatsApp API</div>
+              <div class="conn-card-status" id="status_wa">—</div>
+            </div>
+            <div class="conn-card" id="card_wa_number">
+              <div class="conn-card-icon">📞</div>
+              <div class="conn-card-label">Phone Number</div>
+              <div class="conn-card-status" id="status_wa_number">—</div>
+            </div>
+          </div>
+          <!-- Webhook URL -->
+          <div>
+            <label class="setting-label">Webhook URL (paste this into Meta)</label>
+            <div style="display:flex;gap:8px;align-items:center">
+              <div id="settingWebhookUrl" style="flex:1;background:var(--elevated);border:1px solid var(--border);
+                border-radius:8px;padding:9px 12px;font-size:0.8rem;color:var(--lime);
+                font-family:monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+                Set your Apps Script URL above first
+              </div>
+              <button class="btn btn-ghost" style="flex-shrink:0;font-size:0.8rem" onclick="copyWebhookUrl()">📋</button>
+            </div>
+          </div>
+          <div style="display:flex;gap:0.75rem;flex-wrap:wrap">
+            <button class="btn btn-primary" onclick="testWhatsAppConnection()" id="testWaBtn">
+              📱 Test WhatsApp
+            </button>
+            <button class="btn btn-ghost" onclick="sendTestWhatsAppMessage()">
+              💬 Send Test Message
+            </button>
+          </div>
+          <div id="waTestResult" style="font-size:0.85rem;color:var(--muted)"></div>
         </div>
       </div>
+
+      <!-- ── Notifications ── -->
+      <div class="panel" style="margin-bottom:1.5rem">
+        <div class="panel-header"><div class="panel-title">🔔 Notifications</div></div>
+        <div class="panel-body" style="display:flex;flex-direction:column;gap:1.25rem">
+          <div>
+            <label class="setting-label">Push Notification Topic (ntfy.sh)</label>
+            <input type="text" id="setting_ntfy_topic" class="search-box" style="width:100%" placeholder="deliytmedia-alerts-abc123">
+            <div class="setting-hint">
+              Install the <strong style="color:var(--lime)">ntfy</strong> app → subscribe to this topic → get instant phone alerts.
+              <a href="https://ntfy.sh" target="_blank" style="color:var(--lime)">ntfy.sh →</a>
+            </div>
+          </div>
+          <div style="display:flex;gap:0.75rem;flex-wrap:wrap">
+            <button class="btn btn-ghost" onclick="requestPushPermission()">🔔 Enable Browser Notifications</button>
+            <button class="btn btn-ghost" onclick="testPushNotification()">📤 Send Test Push</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Security ── -->
+      <div class="panel" style="margin-bottom:1.5rem">
+        <div class="panel-header"><div class="panel-title">🔒 Security</div></div>
+        <div class="panel-body" style="display:flex;flex-direction:column;gap:1.25rem">
+          <div>
+            <label class="setting-label">Change Admin Password</label>
+            <input type="password" id="setting_new_password" class="search-box" style="width:100%" placeholder="New password">
+          </div>
+          <div>
+            <label class="setting-label">Confirm New Password</label>
+            <input type="password" id="setting_confirm_password" class="search-box" style="width:100%" placeholder="Confirm new password">
+          </div>
+          <button class="btn btn-ghost" onclick="changeAdminPassword()">🔒 Update Password</button>
+          <div id="passwordResult" style="font-size:0.85rem;color:var(--muted)"></div>
+        </div>
+      </div>
+
+      <!-- ── Landing Page URLs ── -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">🔗 Landing Page Ad URLs</div>
+          <button class="btn btn-ghost" style="font-size:0.82rem" onclick="renderSettingsLandingUrls()">↻ Refresh</button>
+        </div>
+        <div class="panel-body">
+          <div style="font-size:0.85rem;color:var(--muted);margin-bottom:1rem">Share these links in your ad campaigns. Each uses a different AI prompt tuned for that ad.</div>
+          <div id="settingsLandingUrls"></div>
+        </div>
+      </div>
+
     </div>
 
   </main>
-</div>
-
-<!-- Conversation Thread Modal -->
-<div class="modal-overlay" id="convModal">
-  <div class="modal">
-    <div class="modal-header">
-      <div>
-        <div style="font-weight:800; font-size:1.1rem" id="modalTitle">Conversation</div>
-        <div style="color:var(--muted); font-size:0.85rem; margin-top:3px" id="modalSub"></div>
-      </div>
-      <button class="modal-close" onclick="closeModal()">×</button>
-    </div>
-    <div class="modal-body">
-      <div id="modalStateView" style="margin-bottom:1.5rem; display:none">
-        <div style="font-size:0.85rem; font-weight:700; color:var(--muted); text-transform:uppercase; margin-bottom:0.5rem">Agent State</div>
-        <pre class="state-pre" id="stateJson"></pre>
-      </div>
-      <div id="threadMessages"></div>
-    </div>
-  </div>
 </div>
 
 <script>
@@ -2353,13 +2474,23 @@
   // ════════════════════════════════════════════════════════
 
   function initSettings() {
-    document.getElementById('setting_website_url').value    = localStorage.getItem('dm_website_url')     || 'https://deliytmedia.com';
-    document.getElementById('setting_business_name').value  = localStorage.getItem('dm_business_name')   || 'Deliytmedia Solutions';
-    document.getElementById('setting_business_phone').value = localStorage.getItem('dm_business_phone')  || '';
-    document.getElementById('setting_apps_script_url').value= localStorage.getItem('dm_apps_script_url') || '';
-    document.getElementById('setting_sheets_url').value     = localStorage.getItem('dm_sheets_url')      || '';
-    document.getElementById('setting_ntfy_topic').value     = localStorage.getItem('dm_ntfy_topic')      || '';
-    // Ensure promptsData is populated before rendering URLs
+    var s = function(id, key, def) {
+      var el = document.getElementById(id);
+      if (el) el.value = localStorage.getItem(key) || (def || '');
+    };
+    s('setting_website_url',     'dm_website_url',     'https://deliytmedia.com');
+    s('setting_business_name',   'dm_business_name',   'Deliytmedia Solutions');
+    s('setting_business_email',  'dm_business_email',  'hello@deliytmedia.com');
+    s('setting_business_phone',  'dm_business_phone',  '');
+    s('setting_apps_script_url', 'dm_apps_script_url', '');
+    s('setting_sheets_url',      'dm_sheets_url',      '');
+    s('setting_ntfy_topic',      'dm_ntfy_topic',      '');
+    var webhookEl = document.getElementById('settingWebhookUrl');
+    var scriptUrl = localStorage.getItem('dm_apps_script_url');
+    if (webhookEl && scriptUrl) webhookEl.textContent = scriptUrl;
+    var sheetsLink = document.getElementById('sheetsLink');
+    var sheetsUrl  = localStorage.getItem('dm_sheets_url');
+    if (sheetsLink && sheetsUrl) sheetsLink.href = sheetsUrl;
     if (!promptsData || !promptsData.length) {
       promptsData = JSON.parse(localStorage.getItem('dm_prompts') || 'null') || DEFAULT_PROMPTS;
     }
@@ -2367,38 +2498,67 @@
   }
 
   function saveSettings() {
-    const fields = {
+    var fields = {
       dm_website_url:     'setting_website_url',
       dm_business_name:   'setting_business_name',
+      dm_business_email:  'setting_business_email',
       dm_business_phone:  'setting_business_phone',
       dm_apps_script_url: 'setting_apps_script_url',
       dm_sheets_url:      'setting_sheets_url',
-      dm_ntfy_topic:      'setting_ntfy_topic'
+      dm_ntfy_topic:      'setting_ntfy_topic',
     };
-    Object.entries(fields).forEach(function([key, id]) {
-      const val = document.getElementById(id).value.trim();
-      if (val) localStorage.setItem(key, val);
+    Object.keys(fields).forEach(function(key) {
+      var el = document.getElementById(fields[key]);
+      if (el) { var val = el.value.trim(); if (val) localStorage.setItem(key, val); }
     });
-
-    // Reconnect push if topic changed
+    var webhookEl = document.getElementById('settingWebhookUrl');
+    var scriptUrl = localStorage.getItem('dm_apps_script_url');
+    if (webhookEl && scriptUrl) webhookEl.textContent = scriptUrl;
+    var sheetsLink = document.getElementById('sheetsLink');
+    var sheetsUrl  = localStorage.getItem('dm_sheets_url');
+    if (sheetsLink && sheetsUrl) sheetsLink.href = sheetsUrl;
     if (window._ntfySource) { window._ntfySource.close(); window._ntfySource = null; }
     setupPushNotifications();
     renderSettingsLandingUrls();
-
-    const appsScriptUrl = localStorage.getItem('dm_apps_script_url');
-    if (appsScriptUrl && !appsScriptUrl.includes('YOUR_')) {
-      fetch(appsScriptUrl, {
-        method:'POST',
-        body: new URLSearchParams({ action:'saveSettings',
-          website_url:    localStorage.getItem('dm_website_url')||'',
-          business_name:  localStorage.getItem('dm_business_name')||'',
-          business_phone: localStorage.getItem('dm_business_phone')||''
-        })
-      }).catch(function(){});
+    var url = localStorage.getItem('dm_apps_script_url');
+    if (url && !url.includes('YOUR_')) {
+      fetch(url, { method:'POST', body: new URLSearchParams({
+        action:'saveSettings',
+        website_url:    localStorage.getItem('dm_website_url')||'',
+        business_name:  localStorage.getItem('dm_business_name')||'',
+        business_email: localStorage.getItem('dm_business_email')||'',
+        business_phone: localStorage.getItem('dm_business_phone')||''
+      })}).catch(function(){});
     }
+    var btn = document.querySelector('[onclick="saveSettings()"]');
+    if (btn) { var o = btn.textContent; btn.textContent = '\u2705 Saved!'; setTimeout(function(){ btn.textContent = o; }, 2000); }
+  }
 
-    const btn = document.querySelector('[onclick="saveSettings()"]');
-    if (btn) { const o = btn.textContent; btn.textContent = '✅ Saved!'; setTimeout(function(){ btn.textContent = o; }, 2000); }
+  function changeAdminPassword() {
+    var np = document.getElementById('setting_new_password').value;
+    var cp = document.getElementById('setting_confirm_password').value;
+    var el = document.getElementById('passwordResult');
+    if (!np) { el.textContent = '\u26a0\ufe0f Enter a new password.'; el.style.color = 'var(--warm)'; return; }
+    if (np !== cp) { el.textContent = '\u274c Passwords do not match.'; el.style.color = 'var(--hot)'; return; }
+    if (np.length < 6) { el.textContent = '\u26a0\ufe0f Password must be at least 6 characters.'; el.style.color = 'var(--warm)'; return; }
+    localStorage.setItem(AUTH.PASS_KEY, np);
+    document.getElementById('setting_new_password').value = '';
+    document.getElementById('setting_confirm_password').value = '';
+    el.textContent = '\u2705 Password updated. Takes effect on next login.';
+    el.style.color = 'var(--success)';
+  }
+
+  function testPushNotification() {
+    var topic = localStorage.getItem('dm_ntfy_topic');
+    if (!topic) { alert('Set a ntfy topic first, then save settings.'); return; }
+    fetch('https://ntfy.sh/' + topic, {
+      method: 'POST',
+      headers: { 'Title': '\ud83d\udce2 Test Alert', 'Priority': 'default', 'Tags': 'white_check_mark' },
+      body: 'Push notifications are working for Deliytmedia Admin! \u2705'
+    }).then(function(r) {
+      if (r.ok) alert('\u2705 Test notification sent! Check your ntfy app.');
+      else alert('\u274c Failed. Check your topic name.');
+    }).catch(function() { alert('\u274c Network error.'); });
   }
 
   function renderSettingsLandingUrls() {
@@ -2434,21 +2594,124 @@
     }).join('');
   }
 
-  async function testBackendConnection() {
-    const url = localStorage.getItem('dm_apps_script_url');
-    const el  = document.getElementById('connTestResult');
-    if (!url || url.includes('YOUR_')) { el.textContent = '⚠️ No URL saved yet.'; return; }
-    el.textContent = 'Testing...';
-    try {
-      const res  = await fetch(url + '?action=ping');
-      const data = await res.json();
-      el.style.color = data.status === 'ok' ? 'var(--success)' : 'var(--hot)';
-      el.textContent = data.status === 'ok' ? '✅ Connected! ' + data.time : '❌ Error: ' + JSON.stringify(data);
-    } catch(e) {
-      el.style.color = 'var(--hot)';
-      el.textContent = '❌ Connection failed: ' + e.message;
-    }
+  // ── Connection test helpers ───────────────────────────────────────────────
+  function setCardState(id, state, statusText) {
+    var card = document.getElementById('card_' + id);
+    var stat = document.getElementById('status_' + id);
+    if (card) { card.className = 'conn-card ' + state; }
+    if (stat) stat.textContent = statusText;
   }
+
+  function setCardLoading(id) {
+    setCardState(id, 'loading', '...');
+    var card = document.getElementById('card_' + id);
+    if (card) card.querySelector('.conn-card-icon').textContent = '⏳';
+  }
+
+  async function runFullConnectionTest() {
+    var btn = document.getElementById('testAllBtn');
+    var url = localStorage.getItem('dm_apps_script_url');
+    if (!url || url.includes('YOUR_')) {
+      alert('Paste your Apps Script URL first and click Save Settings.');
+      return;
+    }
+    btn.textContent = '⏳ Testing...';
+    btn.disabled    = true;
+    ['backend','gemini','sheets'].forEach(function(id) { setCardLoading(id); });
+
+    try {
+      // 1. Ping
+      var r1   = await fetch(url + '?action=ping');
+      var d1   = await r1.json();
+      var ping = d1.status === 'ok';
+      setCardState('backend', ping ? 'ok' : 'err', ping ? '✅ Connected' : '❌ Failed');
+      document.getElementById('backendStatusDot').style.background = ping ? '#00e87a' : '#ff4455';
+
+      // 2. Gemini + Sheets — ask Apps Script to test both
+      var r2   = await fetch(url + '?action=testConnections');
+      var d2   = await r2.json();
+      setCardState('gemini', d2.gemini ? 'ok' : 'err',
+        d2.gemini ? '✅ ' + (d2.gemini_model || 'OK') : '❌ ' + (d2.gemini_error || 'Failed'));
+      setCardState('sheets', d2.sheets ? 'ok' : 'err',
+        d2.sheets ? '✅ ' + (d2.sheets_name || 'Connected') : '❌ ' + (d2.sheets_error || 'Failed'));
+
+    } catch(e) {
+      ['backend','gemini','sheets'].forEach(function(id) {
+        setCardState(id, 'err', '❌ Error');
+      });
+    }
+    btn.textContent = '🔌 Test All Connections';
+    btn.disabled    = false;
+  }
+
+  async function testWhatsAppConnection() {
+    var btn = document.getElementById('testWaBtn');
+    var url = localStorage.getItem('dm_apps_script_url');
+    if (!url || url.includes('YOUR_')) {
+      alert('Set and save your Apps Script URL first.');
+      return;
+    }
+    btn.textContent = '⏳ Testing...';
+    btn.disabled    = true;
+    setCardLoading('wa');
+    setCardLoading('wa_number');
+    document.getElementById('waTestResult').textContent = '';
+
+    try {
+      var res  = await fetch(url + '?action=testWhatsApp');
+      var data = await res.json();
+      if (data.connected) {
+        setCardState('wa', 'ok', '✅ Connected');
+        setCardState('wa_number', 'ok', data.phone_number || '✅ Active');
+        document.getElementById('waStatusDot').style.background = '#00e87a';
+        document.getElementById('waTestResult').style.color = 'var(--success)';
+        document.getElementById('waTestResult').textContent =
+          '✅ WhatsApp connected. Number: ' + (data.phone_number || '—') + ' · Name: ' + (data.verified_name || '—');
+      } else {
+        setCardState('wa', 'err', '❌ Failed');
+        setCardState('wa_number', 'err', '—');
+        document.getElementById('waStatusDot').style.background = '#ff4455';
+        document.getElementById('waTestResult').style.color = 'var(--hot)';
+        document.getElementById('waTestResult').textContent =
+          '❌ ' + (data.error || 'Check WHATSAPP_CONFIG in Apps Script.');
+      }
+    } catch(e) {
+      setCardState('wa',  'err', '❌ Error');
+      setCardState('wa_number', 'err', '—');
+      document.getElementById('waTestResult').textContent = '❌ Network error: ' + e.message;
+    }
+    btn.textContent = '📱 Test WhatsApp';
+    btn.disabled    = false;
+  }
+
+  async function sendTestWhatsAppMessage() {
+    var url = localStorage.getItem('dm_apps_script_url');
+    if (!url || url.includes('YOUR_')) { alert('Set your Apps Script URL first.'); return; }
+    var phone = prompt('Enter your WhatsApp number to receive the test message:\n(e.g. 2348012345678 — international format, no +)');
+    if (!phone) return;
+    try {
+      var res  = await fetch(url, {
+        method: 'POST',
+        body:   new URLSearchParams({ action: 'sendTestWA', phone: phone })
+      });
+      var data = await res.json();
+      if (data.success) alert('✅ Test message sent to +' + phone + '. Check WhatsApp!');
+      else alert('❌ Failed: ' + (data.error || 'Unknown error'));
+    } catch(e) { alert('❌ Error: ' + e.message); }
+  }
+
+  function copyWebhookUrl() {
+    var url = localStorage.getItem('dm_apps_script_url');
+    if (!url || url.includes('YOUR_')) { alert('Set your Apps Script URL first.'); return; }
+    navigator.clipboard.writeText(url).then(function() {
+      var btn = event.target;
+      var o   = btn.textContent;
+      btn.textContent = '✅';
+      setTimeout(function() { btn.textContent = o; }, 1500);
+    });
+  }
+
+  async function testBackendConnection() { return runFullConnectionTest(); }
 
   function escHtml(str) {
     return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
