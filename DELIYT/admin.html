@@ -2359,6 +2359,10 @@
     document.getElementById('setting_apps_script_url').value= localStorage.getItem('dm_apps_script_url') || '';
     document.getElementById('setting_sheets_url').value     = localStorage.getItem('dm_sheets_url')      || '';
     document.getElementById('setting_ntfy_topic').value     = localStorage.getItem('dm_ntfy_topic')      || '';
+    // Ensure promptsData is populated before rendering URLs
+    if (!promptsData || !promptsData.length) {
+      promptsData = JSON.parse(localStorage.getItem('dm_prompts') || 'null') || DEFAULT_PROMPTS;
+    }
     renderSettingsLandingUrls();
   }
 
@@ -2398,21 +2402,35 @@
   }
 
   function renderSettingsLandingUrls() {
-    const siteUrl = (localStorage.getItem('dm_website_url') || 'https://deliytmedia.com').replace(/\/$/,'');
-    const el = document.getElementById('settingsLandingUrls');
+    var siteUrl = (localStorage.getItem('dm_website_url') || 'https://deliytmedia.com').replace(/\/$/,'');
+    var el = document.getElementById('settingsLandingUrls');
     if (!el) return;
-    el.innerHTML = promptsData.map(p => {
-      const url = siteUrl + '/landing.html?p=' + p.id;
-      return `
-      <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:nowrap;min-width:0;margin-bottom:6px">
-        <span style="font-size:0.8rem;font-weight:700;color:var(--muted);flex-shrink:0;width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(p.name)}</span>
-        <code style="flex:1;min-width:0;background:var(--elevated);padding:7px 12px;border-radius:8px;
-          font-size:0.78rem;color:var(--lime);display:block;overflow:hidden;
-          text-overflow:ellipsis;white-space:nowrap" title="${url}">${url}</code>
-        <button class="btn btn-ghost" style="font-size:0.8rem;padding:5px 10px;flex-shrink:0"
-                onclick="copyPromptUrl(${p.id})">📋</button>
-        ${!p.active ? '<span class="badge badge-pending" style="flex-shrink:0">Inactive</span>' : ''}
-      </div>`;
+
+    // Guarantee we have prompt data — use DEFAULT_PROMPTS if promptsData is empty
+    var data = (promptsData && promptsData.length) ? promptsData : DEFAULT_PROMPTS;
+
+    if (!data || !data.length) {
+      el.innerHTML = '<div style="color:var(--muted);font-size:0.85rem">No prompts found. Go to Ad Prompts tab first.</div>';
+      return;
+    }
+
+    el.innerHTML = data.map(function(p) {
+      var url = siteUrl + '/landing.html?p=' + p.id;
+      return '<div style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--border)">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">' +
+          '<span style="font-size:0.85rem;font-weight:700;color:var(--text)">#' + p.id + ' ' + escHtml(p.name) + '</span>' +
+          (p.active ? '<span class="badge badge-done">Active</span>' : '<span class="badge badge-pending">Inactive</span>') +
+        '</div>' +
+        '<div style="display:flex;align-items:center;gap:8px">' +
+          '<div style="flex:1;background:var(--elevated);border:1px solid var(--border);border-radius:8px;' +
+            'padding:9px 12px;font-size:0.78rem;color:var(--lime);font-family:monospace;' +
+            'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;min-width:0" ' +
+            'onclick="copyPromptUrl(' + p.id + ')" title="' + url + '">' + url +
+          '</div>' +
+          '<button class="btn btn-ghost" style="font-size:0.8rem;padding:6px 12px;flex-shrink:0;white-space:nowrap" ' +
+            'onclick="copyPromptUrl(' + p.id + ')">📋 Copy</button>' +
+        '</div>' +
+      '</div>';
     }).join('');
   }
 
