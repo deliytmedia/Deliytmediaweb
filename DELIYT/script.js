@@ -12,7 +12,7 @@
 
 const CHAT_CONFIG = {
   // ⚠️  PASTE YOUR APPS SCRIPT WEB APP URL BELOW ↓
-  webhookUrl: 'https://script.google.com/macros/s/AKfycbyuMprK8Y4egMApssn2ETLygpER_2PD9KVk6fCXOptZ9y15oDJbbXb4NLLBTHTNzI7J/exec,
+  webhookUrl: 'https://script.google.com/macros/s/AKfycbyuMprK8Y4egMApssn2ETLygpER_2PD9KVk6fCXOptZ9y15oDJbbXb4NLLBTHTNzI7J/exec',
   // ────────────────────────────────────────────────
 
   conversationId: null,
