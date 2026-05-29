@@ -5,8 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Deliytmedia — Agent Dashboard</title>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-  <link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#0a0a0f">
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
     :root {
@@ -1268,10 +1266,8 @@
   function showView(name) {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     document.getElementById('view-' + name).classList.add('active');
-    document.querySelectorAll('.nav-item').forEach(n => {
-      n.classList.remove('active');
-      if (n.getAttribute('onclick')?.includes(`'${name}'`)) n.classList.add('active');
-    });
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    event?.target?.classList.add('active');
     currentView = name;
     loadViewData(name);
   }
@@ -2342,11 +2338,10 @@
   }
 
   function copyPromptUrl(promptId) {
-    const btn = event?.target;
     const siteUrl = (localStorage.getItem('dm_website_url') || window.location.origin).replace(/\/$/,'');
     const url = siteUrl + '/landing.html?p=' + promptId;
     navigator.clipboard.writeText(url).then(() => {
-      if (!btn) return;
+      const btn = event.target;
       const orig = btn.textContent;
       btn.textContent = '✅ Copied!';
       setTimeout(() => btn.textContent = orig, 1500);
@@ -2406,16 +2401,19 @@
     const siteUrl = (localStorage.getItem('dm_website_url') || 'https://deliytmedia.com').replace(/\/$/,'');
     const el = document.getElementById('settingsLandingUrls');
     if (!el) return;
-    el.innerHTML = promptsData.map(p => `
-      <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap">
-        <span style="font-size:0.8rem;font-weight:700;color:var(--muted);min-width:120px">${escHtml(p.name)}</span>
-        <code style="flex:1;background:var(--elevated);padding:7px 12px;border-radius:8px;font-size:0.8rem;color:var(--lime);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
-          ${siteUrl}/landing.html?p=${p.id}
-        </code>
+    el.innerHTML = promptsData.map(p => {
+      const url = siteUrl + '/landing.html?p=' + p.id;
+      return `
+      <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:nowrap;min-width:0;margin-bottom:6px">
+        <span style="font-size:0.8rem;font-weight:700;color:var(--muted);flex-shrink:0;width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(p.name)}</span>
+        <code style="flex:1;min-width:0;background:var(--elevated);padding:7px 12px;border-radius:8px;
+          font-size:0.78rem;color:var(--lime);display:block;overflow:hidden;
+          text-overflow:ellipsis;white-space:nowrap" title="${url}">${url}</code>
         <button class="btn btn-ghost" style="font-size:0.8rem;padding:5px 10px;flex-shrink:0"
                 onclick="copyPromptUrl(${p.id})">📋</button>
-        ${!p.active ? '<span class="badge badge-pending">Inactive</span>' : ''}
-      </div>`).join('');
+        ${!p.active ? '<span class="badge badge-pending" style="flex-shrink:0">Inactive</span>' : ''}
+      </div>`;
+    }).join('');
   }
 
   async function testBackendConnection() {
@@ -2440,10 +2438,7 @@
 
   function initPrompts() { renderPrompts(); }
 
-  // Close modal on overlay click
-  document.getElementById('convModal').addEventListener('click', function(e) {
-    if (e.target === this) closeModal();
-  });
+  // convModal removed — replaced by split-pane chat interface
 
 
   // ═══════════════════════════════════════════════════════════════════════
