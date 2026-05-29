@@ -12,3 +12,8 @@ self.addEventListener('notificationclick', function(e) {
   e.notification.close();
   e.waitUntil(clients.openWindow(e.notification.data.url));
 });
+
+// Subscribe to ntfy topic via SSE when SW installs
+self.addEventListener('install', function() {
+  self.skipWaiting();
+});
