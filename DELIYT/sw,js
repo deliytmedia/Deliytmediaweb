@@ -1,0 +1,14 @@
+self.addEventListener('push', function(e) {
+  var data = e.data ? e.data.json() : {};
+  self.registration.showNotification(data.title || 'Deliytmedia Alert', {
+    body:  data.body  || '',
+    icon:  '/icon-192.png',
+    badge: '/icon-192.png',
+    data:  { url: data.url || '/admin-dashboard.html' }
+  });
+});
+
+self.addEventListener('notificationclick', function(e) {
+  e.notification.close();
+  e.waitUntil(clients.openWindow(e.notification.data.url));
+});
