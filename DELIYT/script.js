@@ -1,4 +1,4 @@
-// ============================================================================
+ // ============================================================================
 // DELIYTMEDIA FRONTEND CHAT — v5 (CORS-FIXED for Google Apps Script)
 //
 // ROOT CAUSE OF "Something went wrong" ERROR:
@@ -12,7 +12,7 @@
 
 const CHAT_CONFIG = {
   // ⚠️  PASTE YOUR APPS SCRIPT WEB APP URL BELOW ↓
-  webhookUrl: 'YOUR_APPS_SCRIPT_WEB_APP_URL_HERE',
+  webhookUrl: 'https://script.google.com/macros/s/AKfycbw7G9fW3MYPaOE4HxbO2QwjsBAicKbzKPfq2IHoMkGdPP3raQuJwrrXMYvNQUckOQX0/exec',
   // ────────────────────────────────────────────────
 
   conversationId: null,
@@ -204,6 +204,11 @@ function handleAgentResponse(data) {
   var resp = data.response || data.message || data.text || null;
 
   if (!resp) {
+    // human_mode = true means admin has taken over — show a polite holding message
+    if (data.human_mode === true) {
+      appendMessage('Our team has been notified and will reply to you shortly. 🙏', 'bot');
+      return;
+    }
     appendMessage("Got an empty response from the server. Check Apps Script logs.", 'bot');
     console.warn('[Deliy] Empty response payload:', data);
     return;
