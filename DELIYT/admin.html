@@ -1413,7 +1413,11 @@
   // ── AI STATUS POLLING ────────────────────────────────────────────────────
   async function checkAIStatus() {
     const url = DASH_CONFIG.appsScriptUrl;
-    if (!url || url.includes('YOUR_')) return;
+    // Don't show AI errors if backend isn't connected yet
+    if (!url || url === 'YOUR_APPS_SCRIPT_WEB_APP_URL_HERE') {
+      document.getElementById('aiStatusBanner').style.display = 'none';
+      return;
+    }
     try {
       const res  = await fetch(url + '?action=aiStatus');
       const data = await res.json();
@@ -1424,19 +1428,22 @@
       if (data.available === false) {
         banner.style.display = 'flex';
         const msgs = {
-          rate_limit: '⚠️ AI rate limit reached — agent running on flowchart mode. Resets at midnight Pacific.',
-          error:      '❌ AI error (' + data.status_code + ') — agent on flowchart mode.',
-          exception:  '❌ AI connection failed — agent on flowchart mode.',
-          no_key:     '⚙️ Gemini API key not configured. Set it in Apps Script CONFIG.'
+          rate_limit: 'AI rate limit reached — agent running on flowchart mode. Resets at midnight Pacific.',
+          error:      'AI error (' + data.status_code + ') — agent on flowchart mode.',
+          exception:  'AI connection failed — agent on flowchart mode.',
+          no_key:     'Gemini API key not configured. Set it in Apps Script CONFIG.'
         };
         const type = data.last_event ? data.last_event.type : 'error';
-        text.textContent  = msgs[type] || '⚠️ AI unavailable — ' + (data.message||'unknown error');
+        text.textContent   = msgs[type] || 'AI unavailable — ' + (data.message || 'unknown error');
         timeEl.textContent = data.last_event ? formatTime(data.last_event.time) : '';
-        addNotification('ai_alert', '⚠️ AI Status: ' + (type||'error'), text.textContent);
+        addNotification('ai_alert', 'AI Status: ' + (type || 'error'), text.textContent);
       } else {
         banner.style.display = 'none';
       }
-    } catch(e) {}
+    } catch(e) {
+      // Silently fail — don't show banner for network errors
+      document.getElementById('aiStatusBanner').style.display = 'none';
+    }
   }
 
   // Poll AI status every 5 minutes
@@ -1477,19 +1484,40 @@
 
   // ── FETCH FROM APPS SCRIPT ────────────────────────────────────────────────
   async function fetchDashData(sheet) {
+    const url = DASH_CONFIG.appsScriptUrl;
+    // Not configured yet — return empty array (no mock data on real deployment)
+    if (!url || url === 'YOUR_APPS_SCRIPT_WEB_APP_URL_HERE') {
+      return [];
+    }
     try {
-      const url = `${DASH_CONFIG.appsScriptUrl}?action=getDashData&sheet=${sheet}`;
-      const res = await fetch(url);
+      const res  = await fetch(`${url}?action=getDashData&sheet=${sheet}`);
       const data = await res.json();
       return data.rows || [];
     } catch(e) {
-      // Return mock data for testing before backend is connected
-      return getMockData(sheet);
+      console.warn('[fetchDashData] Failed for sheet:', sheet, e.message);
+      return [];
     }
   }
 
   // ── OVERVIEW ──────────────────────────────────────────────────────────────
   async function loadOverview() {
+    const url = DASH_CONFIG.appsScriptUrl;
+
+    // Show not-connected state if URL missing
+    if (!url || url === 'YOUR_APPS_SCRIPT_WEB_APP_URL_HERE') {
+      ['st-convs','st-hot','st-apts','st-escs'].forEach(id => {
+        document.getElementById(id).textContent = '—';
+      });
+      const recentEl = document.getElementById('recentConvs');
+      if (recentEl) recentEl.innerHTML =
+        '<div style="text-align:center;padding:2rem;color:var(--muted)">' +
+        '<div style="font-size:2rem;margin-bottom:0.75rem">⚙️</div>' +
+        '<div style="font-weight:700;color:var(--text);margin-bottom:6px">Backend not connected</div>' +
+        '<div style="font-size:0.85rem">Go to <strong style="color:var(--lime)">Settings</strong> → paste your Apps Script URL → Save Settings</div>' +
+        '</div>';
+      return;
+    }
+
     const [convs, leads, apts, escs] = await Promise.all([
       fetchDashData('States'),
       fetchDashData('Leads'),
@@ -1499,13 +1527,13 @@
 
     const hotLeads   = leads.filter(r => r[12] === 'hot');
     const pendingApt = apts.filter(r => r[8] === 'PENDING');
-    const pendingEsc = escs.filter(r => r[7] === 'PENDING');
+    const pendingEsc = escs.filter(r => r[6] === 'PENDING');
 
     document.getElementById('st-convs').textContent = convs.length;
     document.getElementById('st-hot').textContent   = hotLeads.length;
     document.getElementById('st-apts').textContent  = pendingApt.length;
     document.getElementById('st-escs').textContent  = pendingEsc.length;
-    document.getElementById('escBadge').textContent = pendingEsc.length;
+    document.getElementById('escBadge').textContent  = pendingEsc.length;
     document.getElementById('escBadge').style.display = pendingEsc.length > 0 ? 'inline' : 'none';
 
     const lastCount = parseInt(localStorage.getItem('dm_last_hot_count') || '0');
@@ -2739,8 +2767,7 @@
 
   // ── On load: check session ────────────────────────────────────────────
   (function initAuth() {
-    // Detect Claude artifact iframe — localStorage throws or is sandboxed
-    // In that environment, skip auth and show the dashboard with mock data
+    // Detect Claude artifact iframe
     let inArtifact = false;
     try {
       localStorage.setItem('_test', '1');
@@ -2748,16 +2775,26 @@
     } catch(e) {
       inArtifact = true;
     }
-    // Also detect if we're in an iframe with no real origin
     if (!inArtifact && window.self !== window.top) {
       try { void window.top.location.href; } catch(e) { inArtifact = true; }
     }
 
+    // Extra check: if we're on a real domain, never use artifact bypass
+    const isRealDomain = window.location.hostname !== 'localhost' &&
+                         !window.location.hostname.includes('127.0.0.1') &&
+                         window.location.protocol === 'https:';
+    if (isRealDomain) inArtifact = false;
+
     if (inArtifact) {
-      // Preview mode — bypass auth, show dashboard with mock data
       document.getElementById('authWall').classList.add('hidden');
       document.querySelector('.shell').style.visibility = 'visible';
-      setTimeout(loadOverview, 100);
+      // In Claude preview: show mock data only
+      setTimeout(function() {
+        ['st-convs','st-hot','st-apts','st-escs'].forEach(function(id) {
+          var el = document.getElementById(id);
+          if (el) el.textContent = '—';
+        });
+      }, 100);
       return;
     }
 
