@@ -1,4 +1,4 @@
- // ============================================================================
+// ============================================================================
 // DELIYTMEDIA FRONTEND CHAT — v5 (CORS-FIXED for Google Apps Script)
 //
 // ROOT CAUSE OF "Something went wrong" ERROR:
@@ -12,7 +12,7 @@
 
 const CHAT_CONFIG = {
   // ⚠️  PASTE YOUR APPS SCRIPT WEB APP URL BELOW ↓
-  webhookUrl: 'https://script.google.com/macros/s/AKfycbyuMprK8Y4egMApssn2ETLygpER_2PD9KVk6fCXOptZ9y15oDJbbXb4NLLBTHTNzI7J/exec',
+  webhookUrl: 'https://script.google.com/macros/s/AKfycbz3r-URcPVnsfsc1TJl2ExVB7B2ZLJZGzn0DTaQV6fQitBN1lUypKK-WsvDXTd5cLwl/exec',
   // ────────────────────────────────────────────────
 
   conversationId: null,
